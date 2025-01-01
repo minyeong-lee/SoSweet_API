@@ -4,3 +4,4 @@ deepface
 tensorflow
 fastapi
 uvicorn
+flask-socketio
