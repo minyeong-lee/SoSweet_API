@@ -1,7 +1,8 @@
-from pymongo import MongoClient
+from flask_pymongo import PyMongo
 
-def get_db():
-    client = MongoClient("mongodb://localhost:27017")
-    db = client.sosweet
-    return db
+mongo = PyMongo()
+
+def get_db(app):
+    mongo.init_app(app)
+    return mongo.db
 
