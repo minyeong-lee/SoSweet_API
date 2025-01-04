@@ -7,7 +7,7 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(static_image_mode=False, model_complexity=1, enable_segmentation=False, min_detection_confidence=0.5)
 
 def analyze_behavior(frame, user_id):
-    """손이 중간선 위로 올라가 산만한 행동을 감지"""
+    # 손이 중간선 위로 올라가 산만한 행동을 감지
     landmarks = get_landmarks(frame)
     if not landmarks:
         return None
@@ -21,12 +21,12 @@ def analyze_behavior(frame, user_id):
 
     # 손목이 중간값보다 위에 있는지 확인
     if left_hand_y < midpoint_y or right_hand_y < midpoint_y:
-        return "산만한 행동 감지!"
+        return "손이 너무 산만합니다!"
     return None
 
 
 def analyze_folded_arm(frame):
-    """팔짱을 끼고 있는지 감지"""
+    # 팔짱을 끼고 있는지 감지
     landmarks = get_landmarks(frame)
     if not landmarks:
         return None
@@ -37,11 +37,11 @@ def analyze_folded_arm(frame):
 
     # 팔짱 감지
     if left_wrist_x > right_shoulder_x or right_wrist_x < left_shoulder_x:
-        return "팔짱 감지!"
+        return "팔짱은 노노~ 자유롭게 풀어주세요~"
     return None
 
 def analyze_side_movement(frame):
-    """몸을 좌우로 흔드는 동작을 감지"""
+    # 몸을 좌우로 흔드는 동작을 감지
     landmarks = get_landmarks(frame)
     if not landmarks:
         return None
@@ -55,14 +55,14 @@ def analyze_side_movement(frame):
 
     # 움직임 확인
     if midpoint_x > analyze_side_movement.baseline_x + 0.05:
-        return "오른쪽으로 몸을 움직임!"
+        return "몸을 좌우로 너무 움직이시네요! 편안하게 고정!!"
     elif midpoint_x < analyze_side_movement.baseline_x - 0.05:
-        return "왼쪽으로 몸을 움직임!"
+        return "몸을 좌우로 너무 움직이시네요! 편안하게 고정!!"
     return None
 
 
 def get_landmarks(frame):
-    """프레임에서 랜드마크 추출"""
+    # 프레임에서 랜드마크 추출
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = pose.process(frame_rgb)
     if results.pose_landmarks:
