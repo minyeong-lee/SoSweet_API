@@ -1,0 +1,28 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치로 푸시될 때 실행
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # GitHub 레포지토리 코드를 클론
+
+      - name: Deploy to Server
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions_rsa
+          chmod 600 ~/.ssh/github_actions_rsa
+          echo "Host server" >> ~/.ssh/config
+          echo "  HostName 13.125.48.71" >> ~/.ssh/config
+          echo "  User ubuntu" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/github_actions_rsa" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: Deploy to Server
+        run: |
+          ssh server "cd /home/ubuntu/SoSweet_API && git pull origin main"
