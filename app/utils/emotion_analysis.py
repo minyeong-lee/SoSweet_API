@@ -1,7 +1,7 @@
 from deepface import DeepFace
 from datetime import datetime
 
-def analyze_and_send(frame, user_id):
+def analyze_emotion(frame, user_id, room_id):
     try:
         # 감정 분석
         analysis = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
