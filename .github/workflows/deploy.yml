@@ -13,7 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2  # GitHub 레포지토리 코드를 클론
 
-      - name: Deploy to Server
+      - name: Debug SSH Setup
+        run: |
+          ls -l ~/.ssh
+          cat ~/.ssh/config
+
+      - name: SSH setting
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions_rsa
           chmod 600 ~/.ssh/github_actions_rsa
