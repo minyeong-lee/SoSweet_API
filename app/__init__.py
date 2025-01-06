@@ -1,9 +1,6 @@
 from flask import Flask
-from flask_socketio import SocketIO
 from flask_cors import CORS
-from app.routes import nlp_bp, emo_analyze_bp
-
-socketio = SocketIO(cors_allowed_origins="*")
+from app.routes import nlp_bp, emo_analyze_bp, act_analyze_bp
 
 def create_app():
     app = Flask(__name__)
@@ -14,14 +11,18 @@ def create_app():
              r"/*": {
                  "origins": "*",  # 모든 출처 허용
                  "methods": ["GET", "POST", "OPTIONS"],
-                 "allow_headers": ["Content-Type"],
+                 "allow_headers": ["Content-Type", "Authorization"],
                  "expose_headers": ["Content-Type"],
-                 "max_age": 3600
+                 "max_age": 3600  # OPTIONS 요청 캐시 시간(1시간)
              }
          })
     
+    # REST API 라우트 등록
     app.register_blueprint(nlp_bp)
     app.register_blueprint(emo_analyze_bp)
+    app.register_blueprint(act_analyze_bp)
     
-    socketio.init_app(app)
+    # 최대 요청 크기 제한 설정 (50MB)
+    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
+    
     return app
