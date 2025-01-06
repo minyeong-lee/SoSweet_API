@@ -1,7 +1,8 @@
+import time
 from flask import Blueprint, request, jsonify
 from app.utils.emotion_analysis import analyze_emotion
 from app.utils.frame_utils import decode_frame_func
-from app.utils.action_analysis import analyze_hand_movement, analyze_folded_arm, analyze_side_movement, get_landmarks, get_midpoint_y
+from app.utils.action_analysis import analyze_hand_movement, analyze_folded_arm, analyze_side_movement
 
 
 frame_analyze_bp = Blueprint('emo_analyze', __name__)
@@ -14,14 +15,17 @@ def frame_analyze():
     user_id = data.get('user_id')
     room_id = data.get('room_id')
     
+    # 타임스탬프 추가 (디코딩 전에 기록하기)
+    timestamp = int(time.time() * 1000) # 밀리초 단위
+    
     if not frame_url or not user_id or not room_id:
         return jsonify({"message": "필수 데이터가 누락되었습니다."}), 400
     
     try:
         # 이미지 url 을 디코딩
         decoded_frame = decode_frame_func(frame_url)
-        print(f'디코딩된 프레임 타입이요: {type(decoded_frame)}')
-
+        print(f'디코딩된 프레임 타입이요: {type(decoded_frame)}, 타임스탬프: {timestamp}')
+        
         # 감정 분석 수행
         emotion_result = analyze_emotion(decoded_frame)
 
@@ -42,6 +46,7 @@ def frame_analyze():
         return jsonify({
             "user_id": user_id,
             "room_id": room_id,
+            "timestamp": timestamp,
             "emo_analysis_result": emotion_result,
             "act_analysis": act_results
         })
