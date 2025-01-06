@@ -4,8 +4,11 @@ from kiwipiepy import Kiwi
 nlp_bp = Blueprint('nlp', __name__)
 kiwi = Kiwi(model_type='sbg')
 
-@nlp_bp.route('/api/nlp', methods=['POST'])
+@nlp_bp.route('/api/nlp', methods=['POST', 'OPTIONS'])
 def nlp():
+    if request.method == 'OPTIONS':
+        return '', 204
+        
     response = '정상적인 발화\n'
     data = request.json
     script = data.get('script', '')
