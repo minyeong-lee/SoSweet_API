@@ -4,8 +4,8 @@ from app.utils.frame_utils import decode_frame_func
 
 emo_analyze_bp = Blueprint('emo_analyze', __name__)
 
-@emo_analyze_bp.route('/analyze', methods=['POST'])
-def analyze():
+@emo_analyze_bp.route('/api/human/faceinfo', methods=['POST'])
+def emo_analyze():
     data = request.get_json()
     frame_url = data.get('frame')
     user_id = data.get('user_id')

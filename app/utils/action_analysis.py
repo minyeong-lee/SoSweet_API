@@ -1,12 +1,11 @@
 import mediapipe as mp
 import cv2
-import time
 
 # MediaPipe Pose 모델 초기화
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(static_image_mode=False, model_complexity=1, enable_segmentation=False, min_detection_confidence=0.5)
 
-def analyze_behavior(frame, user_id):
+def analyze_hand_movement(frame):
     # 손이 중간선 위로 올라가 산만한 행동을 감지
     landmarks = get_landmarks(frame)
     if not landmarks:
@@ -71,7 +70,7 @@ def get_landmarks(frame):
 
 
 def get_midpoint_y(landmarks):
-    """입과 어깨 중간값 y 좌표 계산"""
+    # 입과 어깨 중간값 y 좌표 계산
     mouth_y = (landmarks[9].y + landmarks[10].y) / 2  # 입술
     shoulder_y = (landmarks[11].y + landmarks[12].y) / 2  # 어깨
     return (mouth_y + shoulder_y) / 2
