@@ -4,17 +4,27 @@ def analyze_emotion(frame):
     try:
         # 감정 분석
         analysis = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
-        print(f'감정 분석이 잘 되고 있어요! {analysis}')
         emotion_scores = analysis[0]['emotion']
-
+        
         # Dominant 감정 계산
         dominant_emotion = max(emotion_scores, key=emotion_scores.get)
         percentage = emotion_scores[dominant_emotion]
 
+        # 한글로 변환할 감정 key
+        emotion_kor = {
+            "angry": "분노",
+            "disgust": "혐오",
+            "fear": "공포",
+            "happy": "행복",
+            "sad": "슬픔",
+            "surprise": "놀람",
+            "neutral": "중립"
+        }
+
         return {
-            "dominant_emotion": dominant_emotion,
-            "percentage": percentage,
-            "emotion_scores": emotion_scores
+            "dominant_emotion": emotion_kor.get(dominant_emotion, dominant_emotion),
+            "percentage": round(percentage, 0), # 소수점 없이
+            "emotion_scores": emotion_scores # 모든 감정 점수
         }
 
     except Exception as e:

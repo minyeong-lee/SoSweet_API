@@ -1,12 +1,11 @@
 import mediapipe as mp
 import cv2
-import time
 
 # MediaPipe Pose 모델 초기화
 # mp.options['input_stream_handler'] = 'ImmediateInputStreamHandler'
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
-    static_image_mode=True, # 매 프레임을 독립적인 정적 이미지로 처리함
+    static_image_mode=True, # 프레임이 연속된 데이터 흐름으로 처리됨
     model_complexity=1, 
     enable_segmentation=False, 
     min_detection_confidence=0.5
