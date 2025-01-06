@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from app.routes import nlp_bp, emo_analyze_bp, act_analyze_bp
+from app.routes import nlp_bp, frame_analyze_bp
 
 def create_app():
     app = Flask(__name__)
@@ -19,8 +19,7 @@ def create_app():
     
     # REST API 라우트 등록
     app.register_blueprint(nlp_bp)
-    app.register_blueprint(emo_analyze_bp)
-    app.register_blueprint(act_analyze_bp)
+    app.register_blueprint(frame_analyze_bp)
     
     # 최대 요청 크기 제한 설정 (50MB)
     app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
