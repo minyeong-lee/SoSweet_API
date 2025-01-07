@@ -9,9 +9,9 @@ def create_app():
          supports_credentials=True,
          resources={
              r"/*": {
-                 "origins": ["http://localhost:3000"],
+                 "origins": "*",  # 모든 출처 허용
                  "methods": ["GET", "POST", "OPTIONS"],
-                 "allow_headers": ["Content-Type", "Authorization"],
+                 "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
                  "expose_headers": ["Content-Type"],
                  "max_age": 3600
              }
