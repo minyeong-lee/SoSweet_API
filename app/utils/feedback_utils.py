@@ -22,6 +22,7 @@ def calculate_emo_result(emotion_data):
 
 # 반환 시점에 변환
 def convert_to_korean(dominant_emotion):
+    print(dominant_emotion)
     emotion_kor = {
                 "angry": "긴장",
                 "disgust": "불편함",
