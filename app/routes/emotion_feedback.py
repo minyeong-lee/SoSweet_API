@@ -37,8 +37,8 @@ def get_emo_feedback():
     print(f"필요 데이터가 잘 추출되어왔나요? {emo_sorted_scores} 과 Top 3 감정은 {emo_top_3}")
     
     # 각각 한글로 변환
-    converted_sorted_scores = convert_to_korean(emo_sorted_scores)
-    converted_top_3 = convert_to_korean(emo_top_3)
+    converted_sorted_scores = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()}
+    converted_top_3 = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()}
     
     # 하나의 딕셔너리로 합치기
     combined_emo_result = {
