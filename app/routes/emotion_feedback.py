@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import json
 import os
+from app.utils.feedback_utils import calculate_emo_result, convert_to_korean
 
 emo_feedback_bp = Blueprint('emotion_feedback', __name__)
 
@@ -16,6 +17,36 @@ def get_emo_feedback():
     if not room_id or not user_id:
         return jsonify({"message": "필수 데이터가 누락되었습니다."}), 400
     
-    # DATA_PATH 에서 room_id 로 된 폴더에서 내 아이디.json 파일 가져오기
-    # 분석해주는 함수 별도로 만들어서 데이터만 반환하기
-    # 반환할 데이터는 
+    # 파일 경로 설정하기
+    file_path = os.path.join(DATA_PATH, room_id, f"{user_id}.json")
+    
+    # JSON 파일 없을 경우
+    if not os.path.exists(file_path):
+        return jsonify({"error": "해당 데이터가 존재하지 않습니다"}), 404
+    
+    # JSON 파일 읽기
+    with open(file_path, 'r', encoding='utf-8') as file:
+        emotion_data = json.load(file)
+    
+    # 필요 데이터만 추출해오기
+    emo_sorted_scores, emo_top_3 = calculate_emo_result(emotion_data)
+    print(f"필요 데이터가 잘 추출되어왔나요? {emo_sorted_scores} 과 Top 3 감정은 {emo_top_3}")
+    
+    # 각각 한글로 변환
+    converted_sorted_scores = convert_to_korean(emo_sorted_scores)
+    converted_top_3 = convert_to_korean(emo_top_3)
+    
+    # 하나의 딕셔너리로 합치기
+    combined_emo_result = {
+        "sorted_emotion_scores": converted_sorted_scores,
+        "top_3_emotions": converted_top_3
+    }
+    
+    print(f"정렬된 전체 감정 점수: {combined_emo_result['sorted_emotion_scores']}")
+    print(f"Top 3 감정: {combined_emo_result['top_3_emotions']}")
+    
+    return jsonify({
+        "user_id": user_id,
+        "room_id": room_id,
+        "emo_feedback_result": combined_emo_result,
+    })

@@ -51,9 +51,9 @@ def frame_analyze():
         
 
         # 동작 분석 수행 (연속성 추적)
-        hand_movement_result = analyze_hand_movement(decoded_frame)
-        folded_arm_result = analyze_folded_arm(decoded_frame)
-        side_movement_result =analyze_side_movement(decoded_frame)
+        hand_movement_result = analyze_hand_movement(decoded_frame, timestamp)
+        folded_arm_result = analyze_folded_arm(decoded_frame, timestamp)
+        side_movement_result =analyze_side_movement(decoded_frame, timestamp)
 
         # 각 동작에 대해 카운트 증가 | 메시지 생성
         action_messages = []
