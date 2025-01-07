@@ -13,10 +13,9 @@ side_movement_queue = deque(maxlen=10)
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
     static_image_mode=True, # 프레임이 연속된 데이터 흐름으로 처리됨
-    model_complexity=1, 
-    enable_segmentation=False, 
-    min_detection_confidence=0.5,
-    options={"input_stream_handler": "ImmediateInputStreamHandler"}
+    model_complexity=1,   # 모델 복잡도 (0, 1, 2)
+    enable_segmentation=False,   # 세분화 비활성화
+    min_detection_confidence=0.5,  # 감지 신뢰도
 )
 
 def analyze_hand_movement(frame):
