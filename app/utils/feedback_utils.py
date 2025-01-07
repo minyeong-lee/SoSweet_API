@@ -32,5 +32,3 @@ def convert_to_korean(emotion_scores):
                 "neutral": "평온함"
             }
     return {emotion_kor[key]: value for key, value in emotion_scores.items()}
-
-# converted_scores = convert_to_korean(emotion_scores)

@@ -23,5 +23,3 @@ def analyze_emotion(frame):
             "percentage": 0,
             "emotion_scores": {}
         }
-    
-    return 0
