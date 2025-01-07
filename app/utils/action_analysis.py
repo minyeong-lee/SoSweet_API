@@ -95,7 +95,7 @@ def analyze_hand_movement_with_queue(frame, timestamp):
     hand_movement_queue.append((frame, timestamp))
     
     # 현재 큐 내용 출력
-    print(f"현재 손 동작 측정 큐 크기: {len(hand_movement_queue)}")
+    # print(f"현재 손 동작 측정 큐 크기: {len(hand_movement_queue)}")
     print(f"손 동작 큐 내용 (최근 5개): {[ts for _, ts in list(hand_movement_queue)[-5:]]}")
     
     # 큐에서 가장 최근 두 개의 프레임 비교
@@ -108,7 +108,7 @@ def analyze_hand_movement_with_queue(frame, timestamp):
             print("손 동작: 타임스탬프 순서 불일치 - 프레임 스킵")
             return None
 
-        # 기존 함수 호출
+        # 기존 함수 호출 (실제 분석)
         return analyze_hand_movement(frame)
 
     return None  # 대기 중
@@ -119,7 +119,7 @@ def analyze_folded_arm_with_queue(frame, timestamp):
     folded_arm_queue.append((frame, timestamp))
     
     # 현재 큐 내용 출력
-    print(f"현재 팔짱 측정 큐 크기: {len(folded_arm_queue)}")
+    # print(f"현재 팔짱 측정 큐 크기: {len(folded_arm_queue)}")
     print(f"큐 내용 (최근 5개): {[ts for _, ts in list(folded_arm_queue)[-5:]]}")
 
     if len(folded_arm_queue) >= 2:
@@ -129,7 +129,7 @@ def analyze_folded_arm_with_queue(frame, timestamp):
         if current_timestamp < prev_timestamp:
             return None
 
-        # 기존 함수 호출
+        # 기존 함수 호출 (실제 분석)
         return analyze_folded_arm(frame)
 
     return None
@@ -139,7 +139,7 @@ def analyze_side_movement_with_queue(frame, timestamp):
     # Queue를 사용하여 몸 움직임 감지
     side_movement_queue.append((frame, timestamp))
 
-    print(f"현재 양쪽으로 움직이기 측정 큐 크기: {len(side_movement_queue)}")
+    # print(f"현재 양쪽으로 움직이기 측정 큐 크기: {len(side_movement_queue)}")
     print(f"큐 내용 (최근 5개): {[ts for _, ts in list(side_movement_queue)[-5:]]}")
 
     if len(side_movement_queue) >= 2:
@@ -148,7 +148,7 @@ def analyze_side_movement_with_queue(frame, timestamp):
 
         if current_timestamp < prev_timestamp:
             return None
-
+        # 실제 분석
         return analyze_side_movement(frame)
 
     return None

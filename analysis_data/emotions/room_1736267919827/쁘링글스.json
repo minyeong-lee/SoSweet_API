@@ -1,0 +1,31 @@
+[
+    {
+        "timestamp": 1736267923525,
+        "dominant_emotion": "neutral",
+        "percentage": 44.0,
+        "emotion_scores": {
+            "angry": 23.22103977203369,
+            "disgust": 0.0510660232976079,
+            "fear": 7.767084240913391,
+            "happy": 11.608510464429855,
+            "sad": 9.974358975887299,
+            "surprise": 3.055577725172043,
+            "neutral": 44.322362542152405
+        }
+    },
+    {
+        "timestamp": 1736267925025,
+        "dominant_emotion": "surprise",
+        "percentage": 41.0,
+        "emotion_scores": {
+            "angry": 15.01886367572979,
+            "disgust": 7.071514329729756,
+            "fear": 34.9745649129671,
+            "happy": 0.6989293364221648,
+            "sad": 1.0703098615634605,
+            "surprise": 40.892870319739544,
+            "neutral": 0.2729422087440242
+        }
+    }
+]  }
+]

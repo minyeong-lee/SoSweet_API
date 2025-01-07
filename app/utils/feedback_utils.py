@@ -6,13 +6,23 @@ def calculate_emo_result(emotion_data):
     
     for entry in emotion_data:
         emotion_scores = entry.get("emotion_scores", {})
-        
+         
         # 감정 스코어 모두 합산
         for emotion, score in emotion_scores.items():
             emotion_counter[emotion] += score
     
-    # 감정 점수 내림차순으로 정렬
-    sorted_emotion_scores = dict(sorted(emotion_counter.items(), key=lambda x: x[1], reverse=True))
+    # 전체 합계를 구해서 100% 기준으로 변환
+    total_score = sum(emotion_counter.values())
+    if total_score == 0:
+        return {}, {}
+    
+    # 100% 기준으로 정규화하고 소수점 없이 반올림
+    normalized_scores = {
+        emotion: round((score / total_score) * 100, 0) for emotion, score in emotion_counter.items()
+    }
+    
+    # 점수 내림차순으로 정렬
+    sorted_emotion_scores = dict(sorted(normalized_scores.items(), key=lambda x: x[1], reverse=True))
     
     # Top 3 감정 추출
     top_3_emotions = dict(list(sorted_emotion_scores.items())[:3])
