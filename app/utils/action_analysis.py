@@ -3,17 +3,19 @@ import mediapipe as mp
 import cv2
 import time
 
-# Queue 생성
-frame_queue = deque(maxlen=10) # 최대 10개의 프레임만 저장
+# 동작별 Queue 생성 (최대 10개씩 저장)
+hand_movement_queue = deque(maxlen=10)
+folded_arm_queue = deque(maxlen=10)
+side_movement_queue = deque(maxlen=10)
 
 # MediaPipe Pose 모델 초기화
 # mp.options['input_stream_handler'] = 'ImmediateInputStreamHandler'
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
     static_image_mode=True, # 프레임이 연속된 데이터 흐름으로 처리됨
-    model_complexity=1, 
-    enable_segmentation=False, 
-    min_detection_confidence=0.5
+    model_complexity=1,   # 모델 복잡도 (0, 1, 2)
+    enable_segmentation=False,   # 세분화 비활성화
+    min_detection_confidence=0.5,  # 감지 신뢰도
 )
 
 def analyze_hand_movement(frame):
@@ -85,25 +87,25 @@ def get_midpoint_y(landmarks):
     # 입과 어깨 중간값 y 좌표 계산
     mouth_y = (landmarks[9].y + landmarks[10].y) / 2  # 입술
     shoulder_y = (landmarks[11].y + landmarks[12].y) / 2  # 어깨
-    return (mouth_y + shoulder_y) / 2
+    return (mouth_y + shoulder_y) / 2 
 
 
 def analyze_hand_movement_with_queue(frame, timestamp):
     # Queue를 사용하여 순서 보장
-    frame_queue.append((frame, timestamp))
+    hand_movement_queue.append((frame, timestamp))
     
     # 현재 큐 내용 출력
-    print(f"현재 손 동작 측정 큐 크기: {len(frame_queue)}")
-    print(f"큐 내용 (최근 5개): {[ts for _, ts in list(frame_queue)[-5:]]}")
+    print(f"현재 손 동작 측정 큐 크기: {len(hand_movement_queue)}")
+    print(f"손 동작 큐 내용 (최근 5개): {[ts for _, ts in list(hand_movement_queue)[-5:]]}")
     
     # 큐에서 가장 최근 두 개의 프레임 비교
-    if len(frame_queue) >= 2:
-        prev_frame, prev_timestamp = frame_queue[-2]
-        current_frame, current_timestamp = frame_queue[-1]
+    if len(hand_movement_queue) >= 2:
+        prev_frame, prev_timestamp = hand_movement_queue[-2]
+        current_frame, current_timestamp = hand_movement_queue[-1]
 
         if current_timestamp < prev_timestamp:
             # 시간 순서가 이상하면 무시
-            print("타임스탬프 순서 불일치: 프레임 스킵")
+            print("손 동작: 타임스탬프 순서 불일치 - 프레임 스킵")
             return None
 
         # 기존 함수 호출
@@ -114,15 +116,15 @@ def analyze_hand_movement_with_queue(frame, timestamp):
 
 def analyze_folded_arm_with_queue(frame, timestamp):
     # Queue를 사용하여 팔짱 감지
-    frame_queue.append((frame, timestamp))
+    folded_arm_queue.append((frame, timestamp))
     
     # 현재 큐 내용 출력
-    print(f"현재 팔짱 측정 큐 크기: {len(frame_queue)}")
-    print(f"큐 내용 (최근 5개): {[ts for _, ts in list(frame_queue)[-5:]]}")
+    print(f"현재 팔짱 측정 큐 크기: {len(folded_arm_queue)}")
+    print(f"큐 내용 (최근 5개): {[ts for _, ts in list(folded_arm_queue)[-5:]]}")
 
-    if len(frame_queue) >= 2:
-        prev_frame, prev_timestamp = frame_queue[-2]
-        current_frame, current_timestamp = frame_queue[-1]
+    if len(folded_arm_queue) >= 2:
+        prev_frame, prev_timestamp = folded_arm_queue[-2]
+        current_frame, current_timestamp = folded_arm_queue[-1]
 
         if current_timestamp < prev_timestamp:
             return None
@@ -135,14 +137,14 @@ def analyze_folded_arm_with_queue(frame, timestamp):
 
 def analyze_side_movement_with_queue(frame, timestamp):
     # Queue를 사용하여 몸 움직임 감지
-    frame_queue.append((frame, timestamp))
+    side_movement_queue.append((frame, timestamp))
 
-    print(f"현재 양쪽으로 움직이기 측정 큐 크기: {len(frame_queue)}")
-    print(f"큐 내용 (최근 5개): {[ts for _, ts in list(frame_queue)[-5:]]}")
+    print(f"현재 양쪽으로 움직이기 측정 큐 크기: {len(side_movement_queue)}")
+    print(f"큐 내용 (최근 5개): {[ts for _, ts in list(side_movement_queue)[-5:]]}")
 
-    if len(frame_queue) >= 2:
-        prev_frame, prev_timestamp = frame_queue[-2]
-        current_frame, current_timestamp = frame_queue[-1]
+    if len(side_movement_queue) >= 2:
+        prev_frame, prev_timestamp = side_movement_queue[-2]
+        current_frame, current_timestamp = side_movement_queue[-1]
 
         if current_timestamp < prev_timestamp:
             return None

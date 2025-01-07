@@ -21,7 +21,7 @@ def calculate_emo_result(emotion_data):
 
 
 # 반환 시점에 변환
-def convert_to_korean(emotion_scores):
+def convert_to_korean(dominant_emotion):
     emotion_kor = {
                 "angry": "긴장",
                 "disgust": "불편함",
@@ -31,4 +31,5 @@ def convert_to_korean(emotion_scores):
                 "surprise": "놀람",
                 "neutral": "평온함"
             }
-    return {emotion_kor[key]: value for key, value in emotion_scores.items()}
+    # 입력된 감정을 한글로 변환하여 리턴
+    return emotion_kor.get(dominant_emotion, "알 수 없음")  # 기본값을 알 수 없음 으로 설정함
