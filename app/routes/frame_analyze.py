@@ -4,6 +4,7 @@ from app.utils.emotion_analysis import analyze_emotion
 from app.utils.frame_utils import decode_frame_func
 from app.utils.action_analysis import analyze_hand_movement, analyze_folded_arm, analyze_side_movement
 from app.utils.json_utils import save_action_data, save_emotion_data
+from app.utils.feedback_utils import convert_to_korean
 
 frame_analyze_bp = Blueprint('frame_analyze', __name__)
 
@@ -49,6 +50,8 @@ def frame_analyze():
         percentage = emotion_result['percentage']
         emotion_scores = emotion_result.get("emotion_scores", {})
         
+        # 실시간으로 보내줄 감정 한글로 변환
+        converted_dominant_emotion = convert_to_korean({dominant_emotion: percentage})  # dominant_emotion 변환
 
         # 동작 분석 수행 (연속성 추적)
         hand_movement_result = analyze_hand_movement(decoded_frame, timestamp)
@@ -97,7 +100,7 @@ def frame_analyze():
             "room_id": room_id,
             "timestamp": timestamp,
             "emo_analysis_result": {
-                "dominant_emotion": dominant_emotion,
+                "dominant_emotion": converted_dominant_emotion,
                 "percentage": percentage
             },
             "act_analysis": action_messages
