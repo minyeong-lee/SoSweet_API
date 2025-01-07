@@ -7,8 +7,12 @@ emo_feedback_bp = Blueprint('emotion_feedback', __name__)
 
 DATA_PATH = "./analysis_data/emotions"
 
-@emo_feedback_bp.route('/api/feedback/faceinfo', methods=['POST'])
+@emo_feedback_bp.route('/api/feedback/faceinfo', methods=['POST', 'OPTIONS'])
 def get_emo_feedback():
+    # OPTIONS 요청 처리 추가
+    if request.method == 'OPTIONS':
+        return '', 204  # 204 No Content로 응답
+        
     # 요청 데이터 가져오기
     data = request.get_json()
     room_id = data.get('room_id')
