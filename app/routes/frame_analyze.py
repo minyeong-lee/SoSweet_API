@@ -2,7 +2,7 @@ import time
 from flask import Blueprint, request, jsonify
 from app.utils.emotion_analysis import analyze_emotion
 from app.utils.frame_utils import decode_frame_func
-from app.utils.action_analysis import analyze_hand_movement, analyze_folded_arm, analyze_side_movement
+from app.utils.action_analysis import analyze_hand_movement_with_queue, analyze_folded_arm_with_queue, analyze_side_movement_with_queue
 from app.utils.json_utils import save_action_data, save_emotion_data
 from app.utils.feedback_utils import convert_to_korean
 
@@ -54,9 +54,9 @@ def frame_analyze():
         converted_dominant_emotion = convert_to_korean({dominant_emotion: percentage})  # dominant_emotion 변환
 
         # 동작 분석 수행 (연속성 추적)
-        hand_movement_result = analyze_hand_movement(decoded_frame, timestamp)
-        folded_arm_result = analyze_folded_arm(decoded_frame, timestamp)
-        side_movement_result =analyze_side_movement(decoded_frame, timestamp)
+        hand_movement_result = analyze_hand_movement_with_queue(decoded_frame, timestamp)
+        folded_arm_result = analyze_folded_arm_with_queue(decoded_frame, timestamp)
+        side_movement_result =analyze_side_movement_with_queue(decoded_frame, timestamp)
 
         # 각 동작에 대해 카운트 증가 | 메시지 생성
         action_messages = []
