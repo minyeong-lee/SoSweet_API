@@ -51,7 +51,7 @@ def frame_analyze():
         emotion_scores = emotion_result.get("emotion_scores", {})
         
         # 실시간으로 보내줄 감정 한글로 변환
-        converted_dominant_emotion = convert_to_korean({dominant_emotion: percentage})  # dominant_emotion 변환
+        converted_dominant_emotion = convert_to_korean(dominant_emotion)
 
         # 동작 분석 수행 (연속성 추적)
         hand_movement_result = analyze_hand_movement_with_queue(decoded_frame, timestamp)
