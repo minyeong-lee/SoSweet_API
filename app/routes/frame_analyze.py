@@ -93,38 +93,25 @@ def frame_analyze():
         emotion_scores = emotion_result.get("emotion_scores", {})
         
         # 동작 분석 수행 (연속성 추적)
+        hand_movement_result, hand_ts = analyze_hand_movement_with_queue(decoded_frame, timestamp)
         
-        
-        hand_result = analyze_hand_movement_with_queue(decoded_frame, timestamp)
-        if hand_result is not None:
-            hand_movement_result, hand_ts = hand_result
-        else:
-            hand_movement_result, hand_ts = None, None
-        
-        arm_result = analyze_folded_arm_with_queue(decoded_frame, timestamp)
-        if arm_result is not None:
-            folded_arm_result, arm_ts = arm_result
-        else:
-            folded_arm_result, arm_ts = None, None
-            
-        side_result = analyze_side_movement_with_queue(decoded_frame, timestamp)
-        if side_result is not None:
-            side_movement_result, side_ts = side_result
-        else:
-            side_movement_result, side_ts = None, None
-
-
-        action_messages = []
+        # hand_movement_result 가 실제 메시지(문자열)일 때만 카운트 증가/로그 출력
         counters = user_counters[user_id]
         
+        hand_movement_result, hand_ts = analyze_hand_movement_with_queue(decoded_frame, timestamp)
+        folded_arm_result, arm_ts = analyze_folded_arm_with_queue(decoded_frame, timestamp)
+        side_movement_result, side_ts = analyze_side_movement_with_queue(decoded_frame, timestamp)
+
+        action_messages = []
+        
         # 1) 손 움직임    
-        if hand_result:
+        if hand_movement_result:
             counters["hand_count"] += 1
             print("손이 좀 산만해요!!!!!!!!!!!!!!!!")
             # 조건 설정) 5회 누적 시 -> 메시지 발송 & 카운트 리셋
-            if counters["hand_count"] >= 5:
+            if counters["hand_count"] >= 4:
                 counters["hand_message_count"] += 1
-                action_messages.append("손이 5회 이상 산만합니다!! 손을 차분하게 해주세요~")
+                action_messages.append("손이 4회 이상 산만합니다!! 손을 차분하게 해주세요~")
                 counters["hand_count"] = 0
                 # 큐 비우기 (안하면, 계속 프레임 쌓임)
                 hand_movement_queue.clear()
@@ -135,10 +122,10 @@ def frame_analyze():
         # 2) 팔짱
         if folded_arm_result:
             counters["folded_arm_count"] += 1
-            print("팔짱 꼈어요!!!!!!!!!!!!!!!")
+            print("팔 산만해요!!!!!!!!!!!!!!!")
             if counters["folded_arm_count"] >= 3:
                 counters["folded_arm_message_count"] += 1
-                action_messages.append("3번 이상 팔짱을 꼈습니다! 팔을 풀고 몸짓을 편안히 해보세요!")
+                action_messages.append("3번 이상 팔이 산만합니다! 팔을 자연스럽게 두고 편안히 해보세요!")
                 counters["folded_arm_count"] = 0
                 folded_arm_queue.clear()
             else:
