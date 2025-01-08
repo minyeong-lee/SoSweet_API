@@ -42,19 +42,16 @@ def get_emo_feedback():
     
     # 각각 한글로 변환
     converted_sorted_scores = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()}
-    converted_top_3 = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()[:3]}
     
     # 하나의 딕셔너리로 합치기
-    combined_emo_result = {
-        "sorted_emotion_scores": converted_sorted_scores,
-        "top_3_emotions": converted_top_3
-    }
+    # combined_emo_result = {
+    #     "sorted_emotion_scores": converted_sorted_scores,
+    #     "top_3_emotions": converted_top_3
+    # }
     
-    print(f"정렬된 전체 감정 점수: {combined_emo_result['sorted_emotion_scores']}")
-    print(f"Top 3 감정: {combined_emo_result['top_3_emotions']}")
+    print(f"정렬된 전체 감정 점수: {converted_sorted_scores}")
+    # print(f"Top 3 감정: {combined_emo_result['top_3_emotions']}")
     
     return jsonify({
-        "user_id": user_id,
-        "room_id": room_id,
-        "emo_feedback_result": combined_emo_result,
+        "emo_feedback_result": converted_sorted_scores,
     })
