@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from app.routes import nlp_bp, frame_analyze_bp, emo_feedback_bp, act_feedback_bp
 
@@ -16,6 +16,14 @@ def create_app():
                  "max_age": 3600
              }
          })
+    
+    # Health Check를 위한 루트 엔드포인트 추가
+    @app.route('/')
+    def health_check():
+        return jsonify({
+            "status": "healthy",
+            "message": "SoSweet API Server is running"
+        }), 200
     
     app.register_blueprint(nlp_bp)
     app.register_blueprint(frame_analyze_bp)
