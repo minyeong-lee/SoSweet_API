@@ -2,6 +2,7 @@ from collections import deque
 import mediapipe as mp
 import cv2
 import numpy as np
+import time
 
 # 동작별 Queue 생성 (최대 10개씩 저장)
 hand_movement_queue = deque(maxlen=10)
@@ -20,7 +21,13 @@ pose = mp_pose.Pose(
 
 # 좌우 흔들림(baseline) 기준값을 전역으로 저장할 변수
 side_movement_baseline_3d = None
+rebaseline_interval = 30  # 예) 30초마다 baseline 갱신 (필요시)
 
+# 마지막으로 baseline 잡은 시각(초)
+last_baseline_time = 0
+
+# 현재 시간
+current_time = time.time()
 
 # 공통 유틸
 def get_landmarks(frame):
@@ -37,6 +44,14 @@ def get_midpoint_y(landmarks):
     mouth_y = (landmarks[9].y + landmarks[10].y) / 2  # 입술
     shoulder_y = (landmarks[11].y + landmarks[12].y) / 2  # 어깨
     return (mouth_y + shoulder_y) / 2 
+
+
+def reset_all_queues():
+    # 전역 큐 초기화
+    global hand_movement_queue, folded_arm_queue, side_movement_queue
+    hand_movement_queue.clear()
+    folded_arm_queue.clear()
+    side_movement_queue.clear()
 
 
 def analyze_hand_movement(frame):
@@ -149,36 +164,56 @@ def analyze_folded_arm_with_queue(frame, timestamp):
         if message:
             return (message, timestamp) 
         else:
-            None, None
+            return None, None
         
     return None, None
 
 
 def analyze_side_movement(frame):
+    global side_movement_baseline_3d, last_baseline_time
+
     # 몸을 좌우로 흔드는 동작을 감지
     landmarks = get_landmarks(frame)
     if not landmarks:
         return None
 
-    global side_movement_baseline_x
+    # 어깨 좌표
+    left_shoulder = landmarks[11]
+    right_shoulder = landmarks[12]
     
-    left_shoulder_x, right_shoulder_x = landmarks[11].x, landmarks[12].x
-    midpoint_x = (left_shoulder_x + right_shoulder_x) / 2  # 중앙 좌표 계산
+    # 평균 x, y, z
+    midpoint_x = (left_shoulder.x + right_shoulder.x) / 2
+    midpoint_y = (left_shoulder.y + right_shoulder.y) / 2
+    midpoint_z = (left_shoulder.z + right_shoulder.z) / 2  # 3D 좌표
+    
+    # left_shoulder_x, right_shoulder_x = landmarks[11].x, landmarks[12].x
+    # midpoint_x = (left_shoulder_x + right_shoulder_x) / 2  # 중앙 좌표 계산
 
-    # baseline 설정 및 기준 이동
-    if not hasattr(analyze_side_movement, 'baseline_x'):
-        analyze_side_movement.baseline_x = midpoint_x
-
-    # baseline_x가 아직 없으면, 첫 번째 값으로 설정
-    if side_movement_baseline_x is None:
-        side_movement_baseline_x = midpoint_x
+    # 1) baseline 없으면 세팅
+    if side_movement_baseline_3d is None:
+        side_movement_baseline_3d = (midpoint_x, midpoint_y, midpoint_z)
+        last_baseline_time = time.time() if current_time is None else current_time
         return None
+    
+    # 2) 주기적으로 baseline 다시 잡기 (예: 30초마다)
+    now = time.time() if current_time is None else current_time
+    if (now - last_baseline_time) > rebaseline_interval:
+        side_movement_baseline_3d = (midpoint_x, midpoint_y, midpoint_z)
+        last_baseline_time = now
+        return None
+    
+    base_x, base_y, base_z = side_movement_baseline_3d      
 
-    # 움직임 확인
-    if midpoint_x > analyze_side_movement.baseline_x + 0.05:
-        return "몸을 좌우로 너무 움직이시네요! 편안하게 고정!!"
-    elif midpoint_x < analyze_side_movement.baseline_x - 0.05:
-        return "몸을 좌우로 너무 움직이시네요! 편안하게 고정!!"
+    # 3) x,z 좌표 차이로 "좌우 흔들림" 판단 (z좌표는 카메라에 대한 상대적인 값임)
+    # (y축은 상하이므로, 좌우 흔들림은 x+z만 고려하는 예시이다!!)
+    move_dist = np.sqrt((midpoint_x - base_x)**2 + (midpoint_z - base_z)**2)
+
+    # threshold는 실험적으로 조정
+    # mediapipe의 x,z가 -1 ~ 1 범위라면 0.05는 약 5% 이동한 것
+    threshold = 0.05
+
+    if move_dist > threshold:
+        return "몸을 좌우(또는 앞뒤)로 크게 움직이시네요! 편안하게 고정!!"
     return None
 
 

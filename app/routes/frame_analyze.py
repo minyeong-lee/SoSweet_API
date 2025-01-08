@@ -5,6 +5,7 @@ from app.utils.frame_utils import decode_frame_func
 from app.utils.action_analysis import analyze_hand_movement_with_queue, analyze_folded_arm_with_queue, analyze_side_movement_with_queue
 from app.utils.json_utils import save_action_data, save_emotion_data
 from app.utils.feedback_utils import convert_to_korean
+from app.utils.action_analysis import hand_movement_queue, folded_arm_queue, side_movement_queue
 
 frame_analyze_bp = Blueprint('frame_analyze', __name__)
 
@@ -19,6 +20,7 @@ user_counters = {}
 #   },
 #   "user2": {...}
 # }
+
 
 @frame_analyze_bp.route('/api/ai/frameInfo', methods=['POST'])
 def frame_analyze_ai():
@@ -56,6 +58,7 @@ def frame_analyze_ai():
         print(f"서버 내부 오류: {e}")
         return jsonify({"error": f"서버 오류: {str(e)}"}), 500
 
+
 @frame_analyze_bp.route('/api/human/frameInfo', methods=['POST'])
 def frame_analyze():
     # 요청 데이터 가져오기
@@ -90,15 +93,32 @@ def frame_analyze():
         emotion_scores = emotion_result.get("emotion_scores", {})
         
         # 동작 분석 수행 (연속성 추적)
-        hand_movement_result, hand_ts = analyze_hand_movement_with_queue(decoded_frame, timestamp)
-        folded_arm_result, arm_ts = analyze_folded_arm_with_queue(decoded_frame, timestamp)
-        side_movement_result, side_ts =analyze_side_movement_with_queue(decoded_frame, timestamp)
+        
+        
+        hand_result = analyze_hand_movement_with_queue(decoded_frame, timestamp)
+        if hand_result is not None:
+            hand_movement_result, hand_ts = hand_result
+        else:
+            hand_movement_result, hand_ts = None, None
+        
+        arm_result = analyze_folded_arm_with_queue(decoded_frame, timestamp)
+        if arm_result is not None:
+            folded_arm_result, arm_ts = arm_result
+        else:
+            folded_arm_result, arm_ts = None, None
+            
+        side_result = analyze_side_movement_with_queue(decoded_frame, timestamp)
+        if side_result is not None:
+            side_movement_result, side_ts = side_result
+        else:
+            side_movement_result, side_ts = None, None
+
 
         action_messages = []
         counters = user_counters[user_id]
         
         # 1) 손 움직임    
-        if hand_movement_result:
+        if hand_result:
             counters["hand_count"] += 1
             print("손이 좀 산만해요!!!!!!!!!!!!!!!!")
             # 조건 설정) 5회 누적 시 -> 메시지 발송 & 카운트 리셋
@@ -107,7 +127,6 @@ def frame_analyze():
                 action_messages.append("손이 5회 이상 산만합니다!! 손을 차분하게 해주세요~")
                 counters["hand_count"] = 0
                 # 큐 비우기 (안하면, 계속 프레임 쌓임)
-                from app.utils.action_analysis import hand_movement_queue
                 hand_movement_queue.clear()
             else:
                 # 조건 임계치 도달 전까지는 원래 메시지만
@@ -121,7 +140,6 @@ def frame_analyze():
                 counters["folded_arm_message_count"] += 1
                 action_messages.append("3번 이상 팔짱을 꼈습니다! 팔을 풀고 몸짓을 편안히 해보세요!")
                 counters["folded_arm_count"] = 0
-                from app.utils.action_analysis import folded_arm_queue
                 folded_arm_queue.clear()
             else:
                 action_messages.append(folded_arm_result)
@@ -134,7 +152,6 @@ def frame_analyze():
                 counters["side_move_message_count"] += 1
                 action_messages.append("4회 이상 몸을 흔들고 있어요. 조금 고정해서 자세를 가다듬어 보세요!")
                 counters["side_move_count"] = 0
-                from app.utils.action_analysis import side_movement_queue
                 side_movement_queue.clear()
             else:
                 action_messages.append(side_movement_result)      

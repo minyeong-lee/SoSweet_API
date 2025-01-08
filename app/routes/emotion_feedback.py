@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import json
 import os
 from app.utils.feedback_utils import calculate_emo_result, convert_to_korean
+from app.utils.action_analysis import reset_all_queues
 
 emo_feedback_bp = Blueprint('emotion_feedback', __name__)
 
@@ -9,6 +10,8 @@ DATA_PATH = "./analysis_data/emotions"
 
 @emo_feedback_bp.route('/api/feedback/faceinfo', methods=['POST', 'OPTIONS'])
 def get_emo_feedback():
+    reset_all_queues()
+    
     # OPTIONS 요청 처리 추가
     if request.method == 'OPTIONS':
         # response = jsonify({"message": "CORS preflight success"})
