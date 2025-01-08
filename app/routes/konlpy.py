@@ -30,19 +30,19 @@ def nlp():
             filler_count += 1
             
     if (noword_count > 1):
-        response += "말을 더듬으면 자신감이 없어 보입니다.\n"
+        response += "말 더듬기 "
         noword_count = 0
     if (filler_count > 4):
-        response += "한국인이 아니 근데 이건 진짜가 없이 말하기 좀 힘들지만, 너무 많이 말씀하십니다.\n"
+        response += "지나친 추임새 "
         filler_count = 0
                 
         
     if Tokens[-1].tag != 'EF' and Tokens[-1].tag != 'JX': # 문장 종결 확인: '취미요'같은 경우 '요'를 보조사(JX)로 잡음
-        response += "종결된 문장으로 말해야 의미 전달이 더 명확해집니다.\n"
+        response += "종결되지 않은 문장\n"
     
     else:
         if Tokens[-1].form not in ['요', '죠', '세요', '에요', '어요', '네요', '나요'] and Tokens[-1].len != 3:
-            response += "존댓말 사용은 기본입니다.\n"
+            response += "존댓말 사용 안함\n"
             
 
     
