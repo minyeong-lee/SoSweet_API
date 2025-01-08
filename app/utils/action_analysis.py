@@ -19,7 +19,7 @@ pose = mp_pose.Pose(
 )
 
 # 좌우 흔들림(baseline) 기준값을 전역으로 저장할 변수
-side_movement_baseline_x = None
+side_movement_baseline_3d = None
 
 
 # 공통 유틸
@@ -84,7 +84,7 @@ def analyze_hand_movement_with_queue(frame, timestamp):
 
 
 def analyze_folded_arm(frame):
-    # 팔짱 낀 동작 감지
+    # 팔짱 및 팔 산만한 동작 감지
     # 예) 왼쪽 손목이 오른쪽 팔꿈치 근처 & 오른쪽 손목이 왼쪽 팔꿈치 근처 등에 접근하면!
     landmarks = get_landmarks(frame)
 
@@ -123,20 +123,19 @@ def analyze_folded_arm(frame):
     dist_rw_le = np.sqrt((r_wri_x - l_elb_x)**2 + (r_wri_y - l_elb_y)**2)
 
     if dist_lw_re < dist_threshold and dist_rw_le < dist_threshold:
-        folded_arm_queue.append(True)
         # 연속 프레임에서 여러 번 True가 감지되면 하나의 동작으로 처리해도 됨
-        return "팔짱 꼈어요!!!!!!!!!!!!!!!"
+        return "팔이 너무 산만합니다!!!!!!!!!!!!!!!"
     else:
         return None
     
 
 def analyze_folded_arm_with_queue(frame, timestamp):
-    # Queue를 사용하여 팔짱 감지
+    # Queue를 사용하여 팔 움직임 감지
     folded_arm_queue.append((frame, timestamp))
     
     # 현재 큐 내용 출력
     # print(f"현재 팔짱 측정 큐 크기: {len(folded_arm_queue)}")
-    print(f"팔짱 끼기 큐 내용 (최근 5개): {[ts for _, ts in list(folded_arm_queue)[-5:]]}")
+    print(f"팔 산만 움직임 큐 내용 (최근 5개): {[ts for _, ts in list(folded_arm_queue)[-5:]]}")
 
     if len(folded_arm_queue) >= 2:
         prev_frame, prev_timestamp = folded_arm_queue[-2]
@@ -147,7 +146,10 @@ def analyze_folded_arm_with_queue(frame, timestamp):
 
         # 기존 함수 호출 (실제 분석)
         message = analyze_folded_arm(frame)
-        return (message, timestamp) if message else (None, None)
+        if message:
+            return (message, timestamp) 
+        else:
+            None, None
         
     return None, None
 
