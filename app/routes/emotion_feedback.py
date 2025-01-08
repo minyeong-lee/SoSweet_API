@@ -11,6 +11,10 @@ DATA_PATH = "./analysis_data/emotions"
 def get_emo_feedback():
     # OPTIONS 요청 처리 추가
     if request.method == 'OPTIONS':
+        # response = jsonify({"message": "CORS preflight success"})
+        # response.headers.add("Access-Control-Allow-Origin", "*")
+        # response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Accept")
+        # response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         return '', 204  # 204 No Content로 응답
         
     # 요청 데이터 가져오기
@@ -38,7 +42,7 @@ def get_emo_feedback():
     
     # 각각 한글로 변환
     converted_sorted_scores = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()}
-    converted_top_3 = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()}
+    converted_top_3 = {convert_to_korean(k): v for k, v in emo_sorted_scores.items()[:3]}
     
     # 하나의 딕셔너리로 합치기
     combined_emo_result = {
