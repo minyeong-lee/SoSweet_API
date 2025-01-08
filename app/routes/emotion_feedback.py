@@ -48,8 +48,6 @@ def get_emo_feedback():
     print(f"정렬된 전체 감정 점수: {converted_sorted_scores}")
     # print(f"Top 3 감정: {combined_emo_result['top_3_emotions']}")
     
-    json_scores = json.dumps(converted_sorted_scores)
-    
     return jsonify({
-        "emo_feedback_result": json_scores,
+        "emo_feedback_result": converted_sorted_scores,
     })
