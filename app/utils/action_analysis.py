@@ -16,12 +16,12 @@ pose = mp_pose.Pose(
     static_image_mode=False, # 프레임이 연속된 데이터 흐름으로 처리됨
     model_complexity=1,   # 모델 복잡도 (0, 1, 2)
     enable_segmentation=False,   # 세분화 비활성화
-    min_detection_confidence=0.5,  # 감지 신뢰도
+    min_detection_confidence=0.6,  # 감지 신뢰도
 )
 
 # 좌우 흔들림(baseline) 기준값을 전역으로 저장할 변수
 side_movement_baseline_3d = None
-rebaseline_interval = 30  # 예) 30초마다 baseline 갱신 (필요시)
+rebaseline_interval = 10   # 10초마다 baseline 갱신
 
 # 마지막으로 baseline 잡은 시각(초)
 last_baseline_time = 0
@@ -206,11 +206,20 @@ def analyze_side_movement(frame):
 
     # 3) x,z 좌표 차이로 "좌우 흔들림" 판단 (z좌표는 카메라에 대한 상대적인 값임)
     # (y축은 상하이므로, 좌우 흔들림은 x+z만 고려하는 예시이다!!)
-    move_dist = np.sqrt((midpoint_x - base_x)**2 + (midpoint_z - base_z)**2)
+    # move_dist = np.sqrt((midpoint_x - base_x)**2 + (midpoint_z - base_z)**2)
+
+    # x축 움직임에 더 큰 가중치를 부여했음!!! 개선사항
+    x_weight = 1.5
+    z_weight = 0.5
+    move_dist = np.sqrt(
+        x_weight * (midpoint_x - base_x)**2 + 
+        z_weight * (midpoint_z - base_z)**2
+    )
+
 
     # threshold는 실험적으로 조정
     # mediapipe의 x,z가 -1 ~ 1 범위라면 0.05는 약 5% 이동한 것
-    threshold = 0.05
+    threshold = 0.1  # 10%로 증가
 
     if move_dist > threshold:
         return "몸을 좌우(또는 앞뒤)로 크게 움직이시네요! 편안하게 고정!!"
@@ -235,4 +244,4 @@ def analyze_side_movement_with_queue(frame, timestamp):
         message = analyze_side_movement(frame)
         return (message, timestamp) if message else (None, None)
 
-    return None
+    return None, None

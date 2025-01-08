@@ -135,9 +135,9 @@ def frame_analyze():
         if side_movement_result:
             counters["side_move_count"] += 1
             print("몸 좌우로 흔들었어요!!!!!!!!!!!!")
-            if counters["side_move_count"] >= 4:
+            if counters["side_move_count"] >= 3:
                 counters["side_move_message_count"] += 1
-                action_messages.append("4회 이상 몸을 흔들고 있어요. 조금 고정해서 자세를 가다듬어 보세요!")
+                action_messages.append("3회 이상 몸을 흔들고 있어요. 조금 고정해서 자세를 가다듬어 보세요!")
                 counters["side_move_count"] = 0
                 side_movement_queue.clear()
             else:
