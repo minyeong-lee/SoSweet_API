@@ -16,3 +16,6 @@ Thumbs.db
 # 기타
 *.log
 *.tmp
+
+# 분석 데이터
+analysis_data/

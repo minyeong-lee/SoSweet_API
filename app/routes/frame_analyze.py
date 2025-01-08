@@ -89,13 +89,10 @@ def frame_analyze():
         percentage = emotion_result['percentage']
         emotion_scores = emotion_result.get("emotion_scores", {})
         
-        # 실시간으로 보내줄 감정 한글로 변환
-        # converted_dominant_emotion = convert_to_korean(dominant_emotion)
-
         # 동작 분석 수행 (연속성 추적)
-        hand_movement_result = analyze_hand_movement_with_queue(decoded_frame, timestamp)
-        folded_arm_result = analyze_folded_arm_with_queue(decoded_frame, timestamp)
-        side_movement_result =analyze_side_movement_with_queue(decoded_frame, timestamp)
+        hand_movement_result, hand_ts = analyze_hand_movement_with_queue(decoded_frame, timestamp)
+        folded_arm_result, arm_ts = analyze_folded_arm_with_queue(decoded_frame, timestamp)
+        side_movement_result, side_ts =analyze_side_movement_with_queue(decoded_frame, timestamp)
 
         action_messages = []
         counters = user_counters[user_id]
@@ -145,6 +142,7 @@ def frame_analyze():
         # 메시지 / 카운터 저장
         # 여기서는 매 프레임마다 저장하되, 실제로는 action_messages가 비어있지 않을 때만 저장해도 됨
         save_action_data(
+            room_id,
             user_id,
             {
                 "timestamp": timestamp,
