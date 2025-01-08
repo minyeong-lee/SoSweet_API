@@ -20,6 +20,42 @@ user_counters = {}
 #   "user2": {...}
 # }
 
+@frame_analyze_bp.route('/api/ai/frameInfo', methods=['POST'])
+def frame_analyze_ai():
+    # 요청 데이터 가져오기
+    data = request.get_json()
+    frame_url = data.get('frame')
+    user_id = data.get('user_id')
+    timestamp = data.get('timestamp')
+    room_id = 'ai'
+    
+    if not frame_url or not user_id or not timestamp:
+        return jsonify({"message": "필수 데이터가 누락되었습니다."}), 400
+    
+    try:
+        # 이미지 url 을 디코딩
+        decoded_frame = decode_frame_func(frame_url)
+        emotion_result = analyze_emotion(decoded_frame)
+        dominant_emotion = emotion_result['dominant_emotion']
+        percentage = emotion_result['percentage']
+        emotion_scores = emotion_result.get("emotion_scores", {})
+        
+        save_emotion_data(room_id, user_id, {
+            "timestamp": timestamp,
+            "dominant_emotion": dominant_emotion,
+            "percentage": percentage,
+            "emotion_scores": emotion_scores
+        })
+        
+        return jsonify({
+            "dominant_emotion" : convert_to_korean(dominant_emotion),
+            "value" : percentage
+        })
+        
+    except Exception as e:
+        print(f"서버 내부 오류: {e}")
+        return jsonify({"error": f"서버 오류: {str(e)}"}), 500
+
 @frame_analyze_bp.route('/api/human/frameInfo', methods=['POST'])
 def frame_analyze():
     # 요청 데이터 가져오기
