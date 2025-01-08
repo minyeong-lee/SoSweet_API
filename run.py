@@ -7,6 +7,6 @@ if __name__ == "__main__":
             port=5000, 
             # debug=True,
             ssl_context=(
-                'home/SoSweet_API.pem',
+                'home/ubuntu/SoSweet_API.pem',
             )  # 인증서 경로 설정
     )
