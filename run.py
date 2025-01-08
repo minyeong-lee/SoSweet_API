@@ -7,6 +7,6 @@ if __name__ == "__main__":
             port=5000, 
             # debug=True,
             ssl_context=(
-                'C:/AWS/SoSweet.pem',
+                '~/SoSweet_API.pem',
             )  # 인증서 경로 설정
     )
