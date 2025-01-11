@@ -2,10 +2,10 @@ import time
 from flask import Blueprint, request, jsonify
 from app.utils.emotion_analysis import analyze_emotion
 from app.utils.frame_utils import decode_frame_func
-from app.utils.action_analysis import analyze_hand_movement_with_queue, analyze_side_movement_with_queue
+from app.utils.action_analysis import analyze_hand_movement_with_queue, analyze_side_movement_with_queue, analyze_eye_touch_with_queue
 from app.utils.json_utils import save_action_data, save_emotion_data
 from app.utils.feedback_utils import convert_to_korean
-from app.utils.action_analysis import hand_movement_queue, side_movement_queue
+from app.utils.action_analysis import hand_movement_queue, side_movement_queue, eye_touch_queue
 
 frame_analyze_bp = Blueprint('frame_analyze', __name__)
 
@@ -79,7 +79,7 @@ def frame_analyze():
     frame_counter += 1  # 프레임 카운터 증가
     
     # 5프레임마다 동작 분석 수행
-    if frame_counter % 5 != 0:
+    if frame_counter % 3 != 0:
         print('프레임 스킵 중..') # 스킵된 프레임 로그 출력
         return jsonify({"message": "프레임 스킵 중"}), 200
 
@@ -89,7 +89,9 @@ def frame_analyze():
             "hand_count": 0,
             "hand_message_count": 0,
             "side_move_count": 0,
-            "side_move_message_count": 0
+            "side_move_message_count": 0,
+            "eye_touch_count": 0, # 눈 만지기 행동 카운트 추가함
+            "eye_touch_message_count": 0,
         }
 
     try:
@@ -105,6 +107,7 @@ def frame_analyze():
         # 동작 분석 수행 (연속성 추적)
         hand_movement_result, hand_ts = analyze_hand_movement_with_queue(decoded_frame, timestamp)
         side_movement_result, side_ts = analyze_side_movement_with_queue(decoded_frame, timestamp)
+        eye_touch_result, eye_ts = analyze_eye_touch_with_queue(decoded_frame, timestamp)        
         
         action_messages = []
 
@@ -114,7 +117,7 @@ def frame_analyze():
         # 1) 손 움직임    
         if hand_movement_result:
             counters["hand_count"] += 1
-            print("손 산만함 포착!!!!!!!!!!!!!!")
+            print("[손_CHECK]손 산만함 1회!!!!!!!!!!!!!!")
             # 조건 설정) 3회 누적 시 -> 메시지 발송 & 카운트 리셋
             if counters["hand_count"] >= 3:
                 counters["hand_message_count"] += 1
@@ -126,10 +129,10 @@ def frame_analyze():
                 # 조건 임계치 도달 전까지는 원래 메시지만
                 action_messages.append(hand_movement_result)
         
-         # 3) 몸 좌우 흔들기
+        # 2) 몸 좌우 흔들기
         if side_movement_result:
             counters["side_move_count"] += 1
-            print("몸 좌우로 흔들었어요!!!!!!!!!!!!")
+            print("[몸흔들었음_CHECK] 몸 좌우로 흔들기 1회!!!!!!!!!!!!")
             if counters["side_move_count"] >= 3:
                 counters["side_move_message_count"] += 1
                 action_messages.append("몸을 3회 이상 흔들었습니다! 자세를 가다듬어 보세요!")
@@ -137,7 +140,20 @@ def frame_analyze():
                 side_movement_queue.clear()
             else:
                 action_messages.append(side_movement_result)      
-            
+        
+        # 3) 눈 만지기
+        if eye_touch_result:
+            counters["eye_touch_count"] += 1
+            print("[눈 만졌음_CHECK] 눈 손으로 만지기 1회!!!!!!!!!!!!")
+            if counters["eye_touch_count"] >= 2:
+                counters["eye_touch_message_count"] += 1
+                action_messages.append("눈을 2회 이상 만졌습니다! 눈 건강을 위해서라도 조심해주세요~")
+                counters["eye_touch_count"] = 0
+                eye_touch_queue.clear()
+            else:
+                action_messages.append(eye_touch_result)
+                
+                
         # 메시지 / 카운터 저장
         # 여기서는 매 프레임마다 저장하되, 실제로는 action_messages가 비어있지 않을 때만 저장해도 됨
         save_action_data(
@@ -148,9 +164,11 @@ def frame_analyze():
                 "actions": action_messages,
                 "counters": {
                     "hand_count": counters["hand_count"],
-                    "side_move_count": counters["side_move_count"],
                     "hand_message_count": counters["hand_message_count"],
-                    "side_move_message_count": counters["side_move_message_count"]
+                    "side_move_count": counters["side_move_count"],
+                    "side_move_message_count": counters["side_move_message_count"],
+                    "eye_touch_count": counters["eye_touch_count"],
+                    "eye_touch_message_count": counters["eye_touch_message_count"],
                 }
             }
         )
@@ -171,7 +189,7 @@ def frame_analyze():
                 "dominant_emotion": convert_to_korean(dominant_emotion),
                 "percentage": percentage
             },
-            "act_analysis": action_messages
+            "act_analysis": action_messages if action_messages else ["행동 분석 결과 없음"]
         })
 
     except Exception as e:

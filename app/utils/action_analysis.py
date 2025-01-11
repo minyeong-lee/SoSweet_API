@@ -8,8 +8,9 @@ import time
 hand_movement_queue = deque(maxlen=20)
 folded_arm_queue = deque(maxlen=20)
 side_movement_queue = deque(maxlen=20)
+eye_touch_queue = deque(maxlen=20)
 
-# MediaPipe Pose 모델 초기화
+# MediaPipe Pose 모델, Face Mesh 모델, Hands 모델 초기화
 # mp.options['input_stream_handler'] = 'ImmediateInputStreamHandler'
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
@@ -18,6 +19,13 @@ pose = mp_pose.Pose(
     enable_segmentation=False,   # 세분화 비활성화
     min_detection_confidence=0.6,  # 감지 신뢰도
 )
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1)
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(max_num_hands=2)
+
+
 
 # 좌우 흔들림(baseline) 기준값을 전역으로 저장할 변수
 side_movement_baseline_3d = None
@@ -66,7 +74,12 @@ def reset_all_queues():
     side_movement_queue.clear()
 
 
+# 얼굴 - 손 감지 공통 함수
+def euclidean_distance(point1, point2):
+    return np.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2 + (point1.z - point2.z) ** 2)
 
+
+#########################################################################################################
 
 def analyze_hand_movement(frame):
     # 손이 중간선 위로 올라가 산만한 행동을 감지
@@ -85,7 +98,7 @@ def analyze_hand_movement(frame):
 
     # 손목이 중간값보다 위에 있는지 확인
     if left_hand_y < midpoint_y or right_hand_y < midpoint_y:
-        return "손이 너무 산만합니다!"
+        return "[손_CHECK] 손이 너무 산만합니다!"
     return None
 
 
@@ -168,7 +181,7 @@ def analyze_side_movement(frame):
     threshold = 0.1  # 10%로 증가
 
     if move_dist > threshold:
-        return "몸을 좌우(또는 앞뒤)로 크게 움직이시네요! 편안하게 고정!!"
+        return "[흔드는몸_CHECK] 몸을 좌우(또는 앞뒤)로 크게 움직이시네요! 편안하게 고정!!"
     return None
 
 
@@ -194,73 +207,72 @@ def analyze_side_movement_with_queue(frame, timestamp):
     return None, None
 
 
-##### 카메라 프레임 상 팔의 움직임 판단하는 것이 기획적으로 맞지 않아서 일단 주석 처리함 ###############
-# def analyze_folded_arm(frame):
-#     # 팔짱 및 팔 산만한 동작 감지
-#     # 예) 왼쪽 손목이 오른쪽 팔꿈치 근처 & 오른쪽 손목이 왼쪽 팔꿈치 근처 등에 접근하면!
-#     landmarks = get_landmarks(frame)
-
-#     if not landmarks:
-#         return None
-
-#     img = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+# 눈과 손의 거리 확인 함수
+def is_hand_near_eye(face_landmarks, hand_landmarks):
+    left_eye_points = [33, 133, 159, 145]  # 왼쪽 눈 주요 랜드마크
+    right_eye_points = [362, 263, 386, 374]  # 오른쪽 눈 주요 랜드마크
+    index_finger_tips = [hand_landmarks[8], hand_landmarks[12], hand_landmarks[16]]  # 검지, 중지, 약지
     
-#     # 필요 랜드마크 인덱스
-#     # 왼쪽 팔꿈치: 13, 왼쪽 손목: 15
-#     # 오른쪽 팔꿈치: 14, 오른쪽 손목: 16
-#     left_elbow = landmarks[13]
-#     left_wrist = landmarks[15]
-#     right_elbow = landmarks[14]
-#     right_wrist = landmarks[16]
+    # 평균 좌표 계산하여 눈 영역 생성
+    def get_eye_center(eye_points):
+        avg_x = np.mean([face_landmarks[i].x for i in eye_points])
+        avg_y = np.mean([face_landmarks[i].y for i in eye_points])
+        avg_z = np.mean([face_landmarks[i].z for i in eye_points])
+        return mp.framework.landmark_pb2.NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
     
-#     # 좌표 변환 (실제 해상도에서의)
-#     img_h, img_w, _ = frame.shape
-#     l_elb_x, l_elb_y = left_elbow.x * img_w, left_elbow.y * img_h
-#     l_wri_x, l_wri_y = left_wrist.x * img_w, left_wrist.y * img_h
-#     r_elb_x, r_elb_y = right_elbow.x * img_w, right_elbow.y * img_h
-#     r_wri_x, r_wri_y = right_wrist.x * img_w, right_wrist.y * img_h
+    left_eye_center = get_eye_center(left_eye_points)
+    right_eye_center = get_eye_center(right_eye_points)
     
-
-#     # 손목과 어깨의 x 좌표 가져오기
-#     # left_wrist_x, right_wrist_x = landmarks[15].x, landmarks[16].x
-#     # left_shoulder_x, right_shoulder_x = landmarks[11].x, landmarks[12].x
-
-#     # "팔짱"이라고 판단하는 기준 예시
-#     # - 왼손목과 오른팔꿈치 사이의 유클리드 거리
-#     # - 오른손목과 왼팔꿈치 사이의 유클리드 거리
-#     # - 둘 다 일정 거리 이하이면 팔짱 낀 것으로 봄
-#     dist_threshold = 80  # 임계값 (상황에 따라 조절)
-
-#     dist_lw_re = np.sqrt((l_wri_x - r_elb_x)**2 + (l_wri_y - r_elb_y)**2)
-#     dist_rw_le = np.sqrt((r_wri_x - l_elb_x)**2 + (r_wri_y - l_elb_y)**2)
-
-#     if dist_lw_re < dist_threshold and dist_rw_le < dist_threshold:
-#         # 연속 프레임에서 여러 번 True가 감지되면 하나의 동작으로 처리해도 됨
-#         return "팔이 너무 산만합니다!!!!!!!!!!!!!!!"
-#     else:
-#         return None
+    # 손가락 끝 중앙 좌표 계산
+    avg_x = np.mean([lm.x for lm in index_finger_tips])
+    avg_y = np.mean([lm.y for lm in index_finger_tips])
+    avg_z = np.mean([lm.z for lm in index_finger_tips])
+    index_finger_center = mp.framework.landmark_pb2.NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
     
-
-# def analyze_folded_arm_with_queue(frame, timestamp):
-#     # Queue를 사용하여 팔 움직임 감지
-#     folded_arm_queue.append((frame, timestamp))
+    # 두 눈 중 하나라도 손가락 끝이 가까우면 True 반환
+    left_distance = euclidean_distance(left_eye_center, index_finger_center)
+    right_distance = euclidean_distance(right_eye_center, index_finger_center)
     
-#     # 현재 큐 내용 출력
-#     # print(f"현재 팔짱 측정 큐 크기: {len(folded_arm_queue)}")
-#     print(f"팔 산만 움직임 큐 내용 (최근 5개): {[ts for _, ts in list(folded_arm_queue)[-5:]]}")
+    # 거리 임계값 설정 (조정 가능)
+    threshold_distance = 0.05
+    
+    if left_distance < threshold_distance or right_distance < threshold_distance:
+        return True # 손이 눈 근처임을 나타냄
+    return False
 
-#     if len(folded_arm_queue) >= 2:
-#         prev_frame, prev_timestamp = folded_arm_queue[-2]
-#         current_frame, current_timestamp = folded_arm_queue[-1]
 
-#         if current_timestamp < prev_timestamp:
-#             return None, None
+# 눈 만지기 행동 분석 함수
+def analyze_eye_touch(frame):
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    face_results = face_mesh.process(frame_rgb)
+    hand_results = hands.process(frame_rgb)
+    
+    if face_results.multi_face_landmarks and hand_results.multi_hand_landmarks:
+        for face_landmarks in face_results.multi_face_landmarks:
+            for hand_landmarks in hand_results.multi_hand_landmarks:
+                if is_hand_near_eye(face_landmarks.landmark, hand_landmarks.landmark):
+                    return "[눈_CHECK] 눈을 만지고 있습니다!!!!!"
+    return None
 
-#         # 기존 함수 호출 (실제 분석)
-#         message = analyze_folded_arm(frame)
-#         if message:
-#             return (message, timestamp) 
-#         else:
-#             return None, None
+
+def analyze_eye_touch_with_queue(frame, timestamp):
+    # 큐에 프레임 추가
+    eye_touch_queue.append((frame, timestamp))
+    
+    # 큐 상태 출력
+    print(f"눈 만지지 큐 내용 (최근 5개): {[ts for _, ts in list(eye_touch_queue)[-5:]]}")
+    
+    # 최소 2개의 프레임이 있어야 비교 가능
+    if len(eye_touch_queue) >= 2:
+        prev_frame, prev_timestamp = eye_touch_queue[-2]
+        current_frame, current_timestamp = eye_touch_queue[-1]
         
-#     return None, None
+        if current_timestamp <= prev_timestamp:
+            print(f"경고: 시간 순서가 잘못되었습니다. {prev_timestamp} >= {current_timestamp}")
+            return None, None
+
+        # 실제 행동 분석 함수 호출
+        message = analyze_eye_touch(frame)
+        return (message, timestamp) if message else (None, None)
+    
+    return None, None
