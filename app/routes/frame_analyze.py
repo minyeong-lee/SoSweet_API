@@ -1,4 +1,3 @@
-import time
 from flask import Blueprint, request, jsonify
 from app.utils.emotion_analysis import analyze_emotion
 from app.utils.frame_utils import decode_frame_func
@@ -6,6 +5,8 @@ from app.utils.action_analysis import analyze_hand_movement_with_queue, analyze_
 from app.utils.json_utils import save_action_data, save_emotion_data
 from app.utils.feedback_utils import convert_to_korean
 from app.utils.action_analysis import hand_movement_queue, side_movement_queue, eye_touch_queue
+import cv2
+
 
 frame_analyze_bp = Blueprint('frame_analyze', __name__)
 
@@ -40,7 +41,10 @@ def frame_analyze_ai():
     try:
         # 이미지 url 을 디코딩
         decoded_frame = decode_frame_func(frame_url)
-        emotion_result = analyze_emotion(decoded_frame)
+        print(f"[디버그] 디코딩된 이미지 해상도: {decoded_frame.shape}")  # 해상도 출력
+        # 디버깅용 이미지 저장
+        cv2.imwrite(f"debug_frame_{timestamp}.jpg", decoded_frame)
+        emotion_result = analyze_emotion(decoded_frame) 
         dominant_emotion = emotion_result['dominant_emotion']
         percentage = emotion_result['percentage']
         emotion_scores = emotion_result.get("emotion_scores", {})
@@ -78,8 +82,8 @@ def frame_analyze():
 
     frame_counter += 1  # 프레임 카운터 증가
     
-    # 5프레임마다 동작 분석 수행
-    if frame_counter % 3 != 0:
+    # 모든 프레임마다 동작 분석 수행
+    if frame_counter % 2 != 0:
         print('프레임 스킵 중..') # 스킵된 프레임 로그 출력
         return jsonify({"message": "프레임 스킵 중"}), 200
 

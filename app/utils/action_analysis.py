@@ -17,13 +17,13 @@ pose = mp_pose.Pose(
     static_image_mode=False, # 프레임이 연속된 데이터 흐름으로 처리됨
     model_complexity=1,   # 모델 복잡도 (0, 1, 2)
     enable_segmentation=False,   # 세분화 비활성화
-    min_detection_confidence=0.6,  # 감지 신뢰도
+    min_detection_confidence=0.8,  # 감지 신뢰도
 )
 mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1)
+face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1, min_detection_confidence=0.5)
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(max_num_hands=2)
+hands = mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.5)
 
 
 
@@ -234,22 +234,30 @@ def is_hand_near_eye(face_landmarks, hand_landmarks):
     right_distance = euclidean_distance(right_eye_center, index_finger_center)
     
     # 거리 임계값 설정 (조정 가능)
-    threshold_distance = 0.05
+    threshold_distance = 0.1
     
     if left_distance < threshold_distance or right_distance < threshold_distance:
+        print(f"[CHECK] 눈 근처 거리: {left_distance:.4f}, {right_distance:.4f}")
         return True # 손이 눈 근처임을 나타냄
     return False
 
 
 # 눈 만지기 행동 분석 함수
 def analyze_eye_touch(frame):
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    face_results = face_mesh.process(frame_rgb)
-    hand_results = hands.process(frame_rgb)
+    face_results = face_mesh.process(frame)
+    hand_results = hands.process(frame)
     
+    # 디버깅으로 추가함
+    if not face_results.multi_face_landmarks:
+        print("[디버그] 얼굴이 감지되지 않았습니다.")
+    if not hand_results.multi_hand_landmarks:
+        print("[디버그] 손이 감지되지 않았습니다.")
+    
+    # 얼굴과 손을 모두 인식한 경우만 분석
     if face_results.multi_face_landmarks and hand_results.multi_hand_landmarks:
         for face_landmarks in face_results.multi_face_landmarks:
             for hand_landmarks in hand_results.multi_hand_landmarks:
+                # 눈 근처로 손이 가는 경우
                 if is_hand_near_eye(face_landmarks.landmark, hand_landmarks.landmark):
                     return "[눈_CHECK] 눈을 만지고 있습니다!!!!!"
     return None
