@@ -12,6 +12,9 @@ def nlp():
     #한국인이 자주 쓰는 filler word: '이건'의 경우 '이거/NP' + 'ㄴ/JX'로 잡힘
     kiwi.add_user_word('이건', 'IC')
     
+    #발화에 대한 키워드 dict
+    keyword_dict = dict()
+    
     response = ''
     data = request.json
     script = data.get('script', '')
@@ -28,6 +31,11 @@ def nlp():
             noword_count += 1
         if temp.form in ['아니', '근데', '이건', '진짜', '이거', '좀']: #한국인이 많이 쓰는 filler word
             filler_count += 1
+        if temp.tag == 'NNG': # 키워드 세기
+            if temp.form not in keyword_dict:
+                keyword_dict[temp.form] = 1
+            else:
+                keyword_dict[temp.form] += 1
             
     if (noword_count > 1):
         response += "말 더듬기 "
@@ -44,6 +52,7 @@ def nlp():
         if Tokens[-1].form not in ['요', '죠', '세요', '에요', '어요', '네요', '나요'] and Tokens[-1].len != 3:
             response += "존댓말 사용 안함\n"
             
+    print(keyword_dict)
 
     
-    return jsonify({"message": response}), 200
+    return jsonify({"message": response, "keyword_dict": keyword_dict}), 200
