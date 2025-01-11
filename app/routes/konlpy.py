@@ -32,7 +32,10 @@ def nlp():
         if temp.form in ['아니', '근데', '이건', '진짜', '이거', '좀']: #한국인이 많이 쓰는 filler word
             filler_count += 1
         if temp.tag == 'NNG': # 키워드 세기
-            keyword_dict[temp.form] += 1
+            if temp.form not in keyword_dict:
+                keyword_dict[temp.form] = 1
+            else:
+                keyword_dict[temp.form] += 1
             
     if (noword_count > 1):
         response += "말 더듬기 "
