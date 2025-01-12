@@ -83,8 +83,8 @@ def frame_analyze():
     frame_counter += 1  # 프레임 카운터 증가
     
     # 모든 프레임마다 동작 분석 수행
-    if frame_counter % 2 != 0:
-        print('프레임 스킵 중..') # 스킵된 프레임 로그 출력
+    if frame_counter % 1 != 0:
+        # print('프레임 스킵 중..') # 스킵된 프레임 로그 출력
         return jsonify({"message": "프레임 스킵 중"}), 200
 
     # 전역 counters에 사용자 키가 없으면 초기화

@@ -1,4 +1,4 @@
-from collections import deque
+from collections import deque, namedtuple
 import mediapipe as mp
 import cv2
 import numpy as np
@@ -17,13 +17,13 @@ pose = mp_pose.Pose(
     static_image_mode=False, # 프레임이 연속된 데이터 흐름으로 처리됨
     model_complexity=1,   # 모델 복잡도 (0, 1, 2)
     enable_segmentation=False,   # 세분화 비활성화
-    min_detection_confidence=0.8,  # 감지 신뢰도
+    min_detection_confidence=0.4,  # 감지 신뢰도
 )
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1, min_detection_confidence=0.5)
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.5)
+hands = mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.4)
 
 
 
@@ -37,10 +37,17 @@ last_baseline_time = 0
 # 현재 시간
 current_time = time.time()
 
+# NormalizedLandmark 정의
+NormalizedLandmark = namedtuple("NormalizedLandmark", ["x", "y", "z"])
+
 # 공통 유틸
-def get_landmarks(frame):
-    # 프레임에서 랜드마크 추출
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # 현재의 BGR 영상(프레임)을 RGB로 변환하여
+def get_landmarks(frame, convert_rgb=True):
+    # BGR -> RGB 변환 여부를 옵션으로 둠
+    if convert_rgb:
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    else:
+        frame_rgb = frame
+
     results = pose.process(frame_rgb) # 관절(랜드마크) 정보 얻기
     if results.pose_landmarks:
         return results.pose_landmarks.landmark  # landmark 객체 그대로 반환
@@ -218,7 +225,7 @@ def is_hand_near_eye(face_landmarks, hand_landmarks):
         avg_x = np.mean([face_landmarks[i].x for i in eye_points])
         avg_y = np.mean([face_landmarks[i].y for i in eye_points])
         avg_z = np.mean([face_landmarks[i].z for i in eye_points])
-        return mp.framework.landmark_pb2.NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
+        return NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
     
     left_eye_center = get_eye_center(left_eye_points)
     right_eye_center = get_eye_center(right_eye_points)
@@ -227,7 +234,7 @@ def is_hand_near_eye(face_landmarks, hand_landmarks):
     avg_x = np.mean([lm.x for lm in index_finger_tips])
     avg_y = np.mean([lm.y for lm in index_finger_tips])
     avg_z = np.mean([lm.z for lm in index_finger_tips])
-    index_finger_center = mp.framework.landmark_pb2.NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
+    index_finger_center = NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
     
     # 두 눈 중 하나라도 손가락 끝이 가까우면 True 반환
     left_distance = euclidean_distance(left_eye_center, index_finger_center)
