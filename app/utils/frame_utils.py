@@ -20,7 +20,7 @@ def decode_frame_func(frame):
         
         print(f"[디버그] 디코딩된 이미지 해상도: {decoded_frame.shape}")
         
-        decoded_frame = cv2.resize(decoded_frame, (640, 480), interpolation=cv2.INTER_AREA)
+        # decoded_frame = cv2.resize(decoded_frame, (320, 240), interpolation=cv2.INTER_AREA)
         
         # BGR -> RGB 변환
         decoded_frame_rgb = cv2.cvtColor(decoded_frame, cv2.COLOR_BGR2RGB)
