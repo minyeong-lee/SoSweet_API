@@ -21,6 +21,11 @@ def nlp():
     filler_count = 0
     noword_count = 0
     
+    noword_flag = False;
+    filler_flag = False;
+    noend_flag = False;
+    nopolite_flag = False;
+    
     if not script:
         return jsonify({"error": "스크립트가 넘어오지 않음"}), 400
     
@@ -40,19 +45,22 @@ def nlp():
     if (noword_count > 1):
         response += "말 더듬기 "
         noword_count = 0
+        noword_flag = True
     if (filler_count > 4):
         response += "지나친 추임새 "
         filler_count = 0
+        filler_flag = True
                 
         
     if Tokens[-1].tag != 'EF' and Tokens[-1].tag != 'JX': # 문장 종결 확인: '취미요'같은 경우 '요'를 보조사(JX)로 잡음
         response += "종결되지 않은 문장\n"
-    
+        noend_flag = True
     else:
         if Tokens[-1].form not in ['요', '죠', '세요', '에요', '어요', '네요', '나요'] and Tokens[-1].len != 3:
             response += "존댓말 사용 안함\n"
+            nopolite_flag = True
             
     print(keyword_dict)
 
     
-    return jsonify({"message": response, "keyword_dict": keyword_dict}), 200
+    return jsonify({"noword_flag": noword_flag, "filler_flag": filler_flag, "noend_flag": noend_flag, "nopolite_flag": nopolite_flag, "keyword_dict": keyword_dict}), 200
