@@ -75,10 +75,11 @@ def calculate_threshold(landmarks):
 
 def reset_all_queues():
     # 전역 큐 초기화
-    global hand_movement_queue, folded_arm_queue, side_movement_queue
+    global hand_movement_queue, folded_arm_queue, side_movement_queue, eye_touch_queue
     hand_movement_queue.clear()
     folded_arm_queue.clear()
     side_movement_queue.clear()
+    eye_touch_queue.clear()
 
 
 # 얼굴 - 손 감지 공통 함수
@@ -255,10 +256,10 @@ def analyze_eye_touch(frame):
     hand_results = hands.process(frame)
     
     # 디버깅으로 추가함
-    if not face_results.multi_face_landmarks:
-        print("[디버그] 얼굴이 감지되지 않았습니다.")
-    if not hand_results.multi_hand_landmarks:
-        print("[디버그] 손이 감지되지 않았습니다.")
+    # if not face_results.multi_face_landmarks:
+    #     print("[디버그] 얼굴이 감지되지 않았습니다.")
+    # if not hand_results.multi_hand_landmarks:
+    #     print("[디버그] 손이 감지되지 않았습니다.")
     
     # 얼굴과 손을 모두 인식한 경우만 분석
     if face_results.multi_face_landmarks and hand_results.multi_hand_landmarks:
@@ -275,7 +276,7 @@ def analyze_eye_touch_with_queue(frame, timestamp):
     eye_touch_queue.append((frame, timestamp))
     
     # 큐 상태 출력
-    print(f"눈 만지지 큐 내용 (최근 5개): {[ts for _, ts in list(eye_touch_queue)[-5:]]}")
+    # print(f"눈 만지지 큐 내용 (최근 5개): {[ts for _, ts in list(eye_touch_queue)[-5:]]}")
     
     # 최소 2개의 프레임이 있어야 비교 가능
     if len(eye_touch_queue) >= 2:

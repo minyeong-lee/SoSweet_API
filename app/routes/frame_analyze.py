@@ -97,7 +97,7 @@ def frame_analyze():
             "eye_touch_count": 0, # 눈 만지기 행동 카운트 추가함
             "eye_touch_message_count": 0,
         }
-
+    
     try:
         # 이미지 url 을 디코딩
         decoded_frame = decode_frame_func(frame_url)
@@ -113,50 +113,62 @@ def frame_analyze():
         side_movement_result, side_ts = analyze_side_movement_with_queue(decoded_frame, timestamp)
         eye_touch_result, eye_ts = analyze_eye_touch_with_queue(decoded_frame, timestamp)        
         
-        action_messages = []
+        # 지금 프레임에서 임계치를 넘겼는지 (0 또는 1) 반환할 객체
+        # 예) 손 3회 이상이면 1, 아니면 0 으로 Boolean 결과 응답
+        is_actions = {
+            "is_hand": 0,
+            "is_side": 0,
+            "is_eye": 0,
+        }
 
-        # hand_movement_result 가 실제 메시지(문자열)일 때만 카운트 증가/로그 출력
+        # 카운터 가져오기
         counters = user_counters[user_id]
         
         # 1) 손 움직임    
         if hand_movement_result:
             counters["hand_count"] += 1
-            print("[손_CHECK]손 산만함 1회!!!!!!!!!!!!!!")
+            print("[손_CHECK]손 산만함 1회 감지")
+
             # 조건 설정) 3회 누적 시 -> 메시지 발송 & 카운트 리셋
             if counters["hand_count"] >= 3:
                 counters["hand_message_count"] += 1
-                action_messages.append("손이 3회 이상 산만합니다!! 손을 차분하게 해주세요~")
+                
+                # 이번 프레임에서 임계치 도달했으므로, 반환값 1fh
+                is_actions["is_hand"] = 1
+                
+                # 카운터 리셋
                 counters["hand_count"] = 0
                 # 큐 비우기 (안하면, 계속 프레임 쌓임)
                 hand_movement_queue.clear()
-            else:
-                # 조건 임계치 도달 전까지는 원래 메시지만
-                action_messages.append(hand_movement_result)
+
         
         # 2) 몸 좌우 흔들기
         if side_movement_result:
             counters["side_move_count"] += 1
-            print("[몸흔들었음_CHECK] 몸 좌우로 흔들기 1회!!!!!!!!!!!!")
+            print("[몸흔들었음_CHECK] 몸 좌우로 흔들기 1회 감지")
+
+            # 조건 설정
             if counters["side_move_count"] >= 3:
                 counters["side_move_message_count"] += 1
-                action_messages.append("몸을 3회 이상 흔들었습니다! 자세를 가다듬어 보세요!")
+
+                is_actions["is_side"] = 1
+                
                 counters["side_move_count"] = 0
                 side_movement_queue.clear()
-            else:
-                action_messages.append(side_movement_result)      
         
         # 3) 눈 만지기
         if eye_touch_result:
             counters["eye_touch_count"] += 1
-            print("[눈 만졌음_CHECK] 눈 손으로 만지기 1회!!!!!!!!!!!!")
+            print("[눈 만졌음_CHECK] 눈 손으로 만지기 1회 감지")
+
             if counters["eye_touch_count"] >= 2:
                 counters["eye_touch_message_count"] += 1
-                action_messages.append("눈을 2회 이상 만졌습니다! 눈 건강을 위해서라도 조심해주세요~")
+                
+                is_actions["is_eye"] = 1
+                
                 counters["eye_touch_count"] = 0
                 eye_touch_queue.clear()
-            else:
-                action_messages.append(eye_touch_result)
-                
+
                 
         # 메시지 / 카운터 저장
         # 여기서는 매 프레임마다 저장하되, 실제로는 action_messages가 비어있지 않을 때만 저장해도 됨
@@ -165,7 +177,7 @@ def frame_analyze():
             user_id,
             {
                 "timestamp": timestamp,
-                "actions": action_messages,
+                "actions": is_actions,  # ex: {"hand": 1, "side": 0, "eye":0} 등의 데이터
                 "counters": {
                     "hand_count": counters["hand_count"],
                     "hand_message_count": counters["hand_message_count"],
@@ -193,7 +205,7 @@ def frame_analyze():
                 "dominant_emotion": convert_to_korean(dominant_emotion),
                 "percentage": percentage
             },
-            "act_analysis": action_messages if action_messages else ["행동 분석 결과 없음"]
+            "act_analysis": is_actions
         })
 
     except Exception as e:
