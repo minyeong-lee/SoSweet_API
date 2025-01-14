@@ -10,24 +10,26 @@ DATA_PATH = "./analysis_data/emotions"
 
 @emo_feedback_bp.route('/api/feedback/faceinfo', methods=['POST', 'OPTIONS'])
 def get_emo_feedback():
-    reset_all_queues()
-    
     # OPTIONS 요청 처리 추가
     if request.method == 'OPTIONS':
-        # response = jsonify({"message": "CORS preflight success"})
-        # response.headers.add("Access-Control-Allow-Origin", "*")
-        # response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Accept")
-        # response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        return '', 204  # 204 No Content로 응답
+        response = jsonify({"message": "CORS preflight success"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Accept")
+        response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        return response, 200  # 204 No Content로 응답 
         
     # 요청 데이터 가져오기
     data = request.get_json()
     room_id = data.get('room_id')
     user_id = data.get('user_id')
+
     
     if not room_id or not user_id:
         return jsonify({"message": "필수 데이터가 누락되었습니다."}), 400
     
+    # 필요한 경우 여기서 큐 초기화
+    reset_all_queues()
+
     # 파일 경로 설정하기
     file_path = os.path.join(DATA_PATH, room_id, f"{user_id}.json")
     

@@ -43,7 +43,7 @@ def frame_analyze_ai():
         decoded_frame = decode_frame_func(frame_url)
         print(f"[디버그] 디코딩된 이미지 해상도: {decoded_frame.shape}")  # 해상도 출력
         # 디버깅용 이미지 저장
-        cv2.imwrite(f"debug_frame_{timestamp}.jpg", decoded_frame)
+        # cv2.imwrite(f"debug_frame_{timestamp}.jpg", decoded_frame)
         emotion_result = analyze_emotion(decoded_frame) 
         dominant_emotion = emotion_result['dominant_emotion']
         percentage = emotion_result['percentage']
@@ -130,7 +130,7 @@ def frame_analyze():
             print("[손_CHECK]손 산만함 1회 감지")
 
             # 조건 설정) 3회 누적 시 -> 메시지 발송 & 카운트 리셋
-            if counters["hand_count"] >= 3:
+            if counters["hand_count"] >= 1:
                 counters["hand_message_count"] += 1
                 
                 # 이번 프레임에서 임계치 도달했으므로, 반환값 1fh
@@ -148,7 +148,7 @@ def frame_analyze():
             print("[몸흔들었음_CHECK] 몸 좌우로 흔들기 1회 감지")
 
             # 조건 설정
-            if counters["side_move_count"] >= 3:
+            if counters["side_move_count"] >= 2:
                 counters["side_move_message_count"] += 1
 
                 is_actions["is_side"] = 1

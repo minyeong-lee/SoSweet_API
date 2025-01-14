@@ -29,7 +29,7 @@ hands = mp_hands.Hands(max_num_hands=2, min_detection_confidence=0.4)
 
 # 좌우 흔들림(baseline) 기준값을 전역으로 저장할 변수
 side_movement_baseline_3d = None
-rebaseline_interval = 10   # 10초마다 baseline 갱신
+rebaseline_interval = 15   # 15초마다 baseline 갱신
 
 # 마지막으로 baseline 잡은 시각(초)
 last_baseline_time = 0
@@ -176,8 +176,8 @@ def analyze_side_movement(frame):
     # move_dist = np.sqrt((midpoint_x - base_x)**2 + (midpoint_z - base_z)**2)
 
     # x축 움직임에 더 큰 가중치를 부여했음!!! 개선사항
-    x_weight = 1.5
-    z_weight = 0.5
+    x_weight = 1.2
+    z_weight = 0.3
     move_dist = np.sqrt(
         x_weight * (midpoint_x - base_x)**2 + 
         z_weight * (midpoint_z - base_z)**2
@@ -186,7 +186,7 @@ def analyze_side_movement(frame):
 
     # threshold는 실험적으로 조정
     # mediapipe의 x,z가 -1 ~ 1 범위라면 0.05는 약 5% 이동한 것
-    threshold = 0.1  # 10%로 증가
+    threshold = 0.2  # 어깨 너비 대비 20% 이상 움직임만 감지
 
     if move_dist > threshold:
         return "[흔드는몸_CHECK] 몸을 좌우(또는 앞뒤)로 크게 움직이시네요! 편안하게 고정!!"
