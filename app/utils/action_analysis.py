@@ -88,23 +88,23 @@ class ActionAnalyzer:
 
 
     def get_hand_and_face_results(self, frame_bgr):
-            """
-            BGR 프레임 -> (640,480) 리사이즈 -> RGB
-            face_mesh.process, hands.process 결과 리턴
-            """
-            if frame_bgr is None:
-                return None, None
+        """
+        BGR 프레임 -> (640,480) 리사이즈 -> RGB
+        face_mesh.process, hands.process 결과 리턴
+        """
+        if frame_bgr is None:
+            return None, None
 
-            if frame_bgr.dtype != np.uint8:
-                frame_bgr = frame_bgr.astype(np.uint8)
+        if frame_bgr.dtype != np.uint8:
+            frame_bgr = frame_bgr.astype(np.uint8)
 
-            frame_bgr = np.ascontiguousarray(frame_bgr)
-            frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-            frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        frame_bgr = np.ascontiguousarray(frame_bgr)
+        frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
+        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
 
-            face_results = self.face_mesh.process(frame_rgb)
-            hand_results = self.hands.process(frame_rgb)
-            return face_results, hand_results
+        face_results = self.face_mesh.process(frame_rgb)
+        hand_results = self.hands.process(frame_rgb)
+        return face_results, hand_results
 
 
     @staticmethod
@@ -208,9 +208,9 @@ class ActionAnalyzer:
 
         # baseline 없으면 세팅
         if self.side_movement_baseline_3d is None:
-                self.side_movement_baseline_3d = (midpoint_x, midpoint_y, midpoint_z)
-                self.last_baseline_time = time.time()
-                return None
+            self.side_movement_baseline_3d = (midpoint_x, midpoint_y, midpoint_z)
+            self.last_baseline_time = time.time()
+            return None
         
         # 주기적으로 baseline 다시 잡기 (예: 30초마다)
         if (time.time() - self.last_baseline_time) > self.rebaseline_interval:  # time.time() 직접 호출로 매번 시간 갱신함
@@ -345,7 +345,7 @@ class ActionAnalyzer:
         
         # 얼굴과 손을 모두 인식한 경우만 분석
         if not face_results.multi_face_landmarks or not hand_results.multi_hand_landmarks:
-                return None
+            return None
 
         for face_lms in face_results.multi_face_landmarks:
             for hand_lms in hand_results.multi_hand_landmarks:
