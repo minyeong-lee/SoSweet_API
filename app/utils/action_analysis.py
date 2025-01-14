@@ -301,7 +301,7 @@ class ActionAnalyzer:
         
         # 손가락 끝 중앙 좌표 계산
         valid_finger_points = [lm for lm in index_finger_tips if lm is not None]
-        if valid_finger_points is None:
+        if not valid_finger_points:
             print("[오류] 손가락 랜드마크 정보 부족")
             return False
         

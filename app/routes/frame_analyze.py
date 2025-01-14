@@ -53,7 +53,7 @@ def frame_analyze_ai():
         # 감정 분석
         # emotion_analysis 는 RGB를 원함
         frame_rgb = cv2.cvtColor(decoded_frame_bgr, cv2.COLOR_BGR2RGB)
-        emotion_result = analyze_emotion(frame_rgb) 
+        emotion_result = analyze_emotion(frame_rgb)
         
         dominant_emotion = emotion_result['dominant_emotion']
         percentage = emotion_result['percentage']
