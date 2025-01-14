@@ -57,7 +57,9 @@ def get_landmarks(frame, convert_rgb=True):
 
 
 def get_midpoint_y(landmarks):
-    if not landmarks[9] or not landmarks[10] or not landmarks[11] or not landmarks[12]:
+    # landmarks는 MediaPipe의 NormalizedLandmark 객체 리스트로,
+    # None 대신 빈 리스트나 잘못된 인덱스로 인한 IndexError를 발생시킴
+    if len(landmarks) < 13:  # 필요한 인덱스가 0부터 12까지 존재해야 함
         return None
     
     # 입과 어깨 중간값 y 좌표 계산
@@ -70,7 +72,7 @@ def calculate_threshold(landmarks):
     left_shoulder = landmarks[11]
     right_shoulder = landmarks[12]
     shoulder_width = np.sqrt((left_shoulder.x - right_shoulder.x) ** 2 +
-                             (left_shoulder.y - right_shoulder.y ** 2))
+                         (left_shoulder.y - right_shoulder.y) ** 2)
     return 0.1 * shoulder_width  # 어깨 너비의 10%를 임계값으로 설정 (거리 멀거나 가까운 사용자에 대해 임계값 동적으로 조정)
 
 
@@ -93,7 +95,7 @@ def euclidean_distance(point1, point2):
 def analyze_hand_movement(frame):
     # 손이 중간선 위로 올라가 산만한 행동을 감지
     landmarks = get_landmarks(frame)
-    if not landmarks:
+    if landmarks is None:
         return None
 
     # 입 중심과 어깨 중심의 중간값 계산
@@ -126,6 +128,8 @@ def analyze_hand_movement_with_priority_queue(frame, timestamp):
         
     # 최신 순으로 2개 꺼내서 비교하기 위해 정렬
     sorted_frames = sorted(hand_movement_heap, key=lambda x: x[0])
+    if len(sorted_frames) < 2:
+        return None, None
     prev_timestamp, prev_frame = sorted_frames[-2]
     current_timestamp, current_frame = sorted_frames[-1]
 
@@ -223,20 +227,33 @@ def is_hand_near_eye(face_landmarks, hand_landmarks):
     right_eye_points = [362, 263, 386, 374]  # 오른쪽 눈 주요 랜드마크
     index_finger_tips = [hand_landmarks[8], hand_landmarks[12], hand_landmarks[16]]  # 검지, 중지, 약지
     
-    # 평균 좌표 계산하여 눈 영역 생성
+     # 평균 좌표 계산하여 눈 영역 생성
     def get_eye_center(eye_points):
-        avg_x = np.mean([face_landmarks[i].x for i in eye_points])
-        avg_y = np.mean([face_landmarks[i].y for i in eye_points])
-        avg_z = np.mean([face_landmarks[i].z for i in eye_points])
+        valid_points = [face_landmarks[i] for i in eye_points if i < len(face_landmarks)]
+        if not valid_points:  # 유효한 점이 없다면 None 반환
+            return None
+        avg_x = np.mean([point.x for point in valid_points])
+        avg_y = np.mean([point.y for point in valid_points])
+        avg_z = np.mean([point.z for point in valid_points])
         return NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
     
     left_eye_center = get_eye_center(left_eye_points)
     right_eye_center = get_eye_center(right_eye_points)
     
+    if left_eye_center is None or right_eye_center is None:
+        print("[오류] 얼굴 랜드마크 정보 부족")
+        return False
+    
     # 손가락 끝 중앙 좌표 계산
-    avg_x = np.mean([lm.x for lm in index_finger_tips])
-    avg_y = np.mean([lm.y for lm in index_finger_tips])
-    avg_z = np.mean([lm.z for lm in index_finger_tips])
+    valid_finger_points = [lm for lm in index_finger_tips if lm is not None]
+    if not valid_finger_points:
+        print("[오류] 손가락 랜드마크 정보 부족")
+        return False
+    
+    # 손가락 끝 중앙 좌표 계산
+    avg_x = np.mean([lm.x for lm in valid_finger_points])
+    avg_y = np.mean([lm.y for lm in valid_finger_points])
+    avg_z = np.mean([lm.z for lm in valid_finger_points])
     index_finger_center = NormalizedLandmark(x=avg_x, y=avg_y, z=avg_z)
     
     # 두 눈 중 하나라도 손가락 끝이 가까우면 True 반환
@@ -255,7 +272,7 @@ def is_hand_near_eye(face_landmarks, hand_landmarks):
 # 눈 만지기 행동 분석 함수
 def analyze_eye_touch(frame):
     face_results = face_mesh.process(frame)
-    hand_results = hands.process(frame)
+    hand_results = hands.process(frame)                                
     
     # 디버깅으로 추가함
     # if not face_results.multi_face_landmarks:
