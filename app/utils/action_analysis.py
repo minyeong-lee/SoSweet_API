@@ -25,7 +25,7 @@ class ActionAnalyzer:
         # MediaPipe Pose 모델 초기화
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose(
-            static_image_mode=True, # 프레임을 매번 독립적으로 전달하는 구조에 권장
+            static_image_mode=False, # 프레임을 매번 독립적으로 전달하는 구조에 권장
             model_complexity=1,
             enable_segmentation=False,
             min_detection_confidence=0.4  # 얼굴 및 손 동작 인식 정확도 조절
@@ -34,7 +34,7 @@ class ActionAnalyzer:
         # MediaPipe Face Mesh 모델 초기화
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(
-            static_image_mode=True,
+            # static_image_mode=True,
             max_num_faces=1,  # 인식할 최대 얼굴 수
             min_detection_confidence=0.5
         )
@@ -42,7 +42,7 @@ class ActionAnalyzer:
         # MediaPipe Hands 모델 초기화
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
-            static_image_mode=True,
+            # static_image_mode=True,
             max_num_hands=2,  # 인식할 최대 손 개수
             min_detection_confidence=0.4
         )
@@ -120,7 +120,7 @@ class ActionAnalyzer:
         return (mouth_y + shoulder_y) / 2
 
 
-    def calculate_threshold(landmarks):
+    def calculate_threshold(self, landmarks):
         left_shoulder = landmarks[11]
         right_shoulder = landmarks[12]
         shoulder_width = np.sqrt((left_shoulder.x - right_shoulder.x) ** 2 +
@@ -129,7 +129,7 @@ class ActionAnalyzer:
 
 
     # 얼굴 - 손 감지 공통 함수
-    def euclidean_distance(point1, point2):
+    def euclidean_distance(self, point1, point2):
         return np.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2 + (point1.z - point2.z) ** 2)
 
 
