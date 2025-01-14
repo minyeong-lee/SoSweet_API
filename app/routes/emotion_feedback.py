@@ -2,7 +2,10 @@ from flask import Blueprint, request, jsonify
 import json
 import os
 from app.utils.feedback_utils import calculate_emo_result, convert_to_korean
-from app.utils.action_analysis import reset_all_queues
+from app.utils.action_analysis import ActionAnalyzer
+
+# 전역 인스턴스(싱글톤처럼) 생성
+action_analyzer = ActionAnalyzer()
 
 emo_feedback_bp = Blueprint('emotion_feedback', __name__)
 
@@ -28,7 +31,7 @@ def get_emo_feedback():
         return jsonify({"message": "필수 데이터가 누락되었습니다."}), 400
     
     # 필요한 경우 여기서 큐 초기화
-    reset_all_queues()
+    action_analyzer.reset_all_queues()
 
     # 파일 경로 설정하기
     file_path = os.path.join(DATA_PATH, room_id, f"{user_id}.json")
