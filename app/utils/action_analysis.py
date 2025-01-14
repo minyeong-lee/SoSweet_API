@@ -1,14 +1,14 @@
-from collections import deque, namedtuple
+from collections import namedtuple
 import mediapipe as mp
 import cv2
 import numpy as np
 import time
+import heapq
 
-# 동작별 Queue 생성 (최대 10개씩 저장)
-hand_movement_queue = deque(maxlen=20)
-folded_arm_queue = deque(maxlen=20)
-side_movement_queue = deque(maxlen=20)
-eye_touch_queue = deque(maxlen=20)
+# 우선순위 큐(heap)들 전역으로 정의함 (크기 제한 위함)
+hand_movement_heap = []
+side_movement_heap = []
+eye_touch_heap = []
 
 # MediaPipe Pose 모델, Face Mesh 모델, Hands 모델 초기화
 # mp.options['input_stream_handler'] = 'ImmediateInputStreamHandler'
@@ -40,6 +40,8 @@ current_time = time.time()
 # NormalizedLandmark 정의
 NormalizedLandmark = namedtuple("NormalizedLandmark", ["x", "y", "z"])
 
+
+##########################################################################################################
 # 공통 유틸
 def get_landmarks(frame, convert_rgb=True):
     # BGR -> RGB 변환 여부를 옵션으로 둠
@@ -75,11 +77,10 @@ def calculate_threshold(landmarks):
 
 def reset_all_queues():
     # 전역 큐 초기화
-    global hand_movement_queue, folded_arm_queue, side_movement_queue, eye_touch_queue
-    hand_movement_queue.clear()
-    folded_arm_queue.clear()
-    side_movement_queue.clear()
-    eye_touch_queue.clear()
+    global hand_movement_heap , side_movement_heap , eye_touch_heap 
+    hand_movement_heap .clear()
+    side_movement_heap.clear()
+    eye_touch_heap.clear()
 
 
 # 얼굴 - 손 감지 공통 함수
@@ -110,33 +111,31 @@ def analyze_hand_movement(frame):
     return None
 
 
-def analyze_hand_movement_with_queue(frame, timestamp):
-    # Queue를 사용하여 순서 보장
-    hand_movement_queue.append((frame, timestamp))
+def analyze_hand_movement_with_priority_queue(frame, timestamp):
+    """
+    우선순위 큐를 사용하여 (timestamp, frame) 정렬 관리,
+    가장 최근 2개 프레임 비교하여 산만 손동작 여부 판단
     
-    # 현재 큐 내용 출력
-    # print(f"현재 손 동작 측정 큐 크기: {len(hand_movement_queue)}")
-    print(f"손 동작 큐 내용 (최근 5개): {[ts for _, ts in list(hand_movement_queue)[-5:]]}")
+    """
+    # 우선순위 큐에 push하기, timestamp 오름차순으로 정렬
+    heapq.heappush(hand_movement_heap, (timestamp, frame))
     
-    # 큐에서 가장 최근 두 개의 프레임 비교
-    if len(hand_movement_queue) >= 2:
-        prev_frame, prev_timestamp = hand_movement_queue[-2]
-        current_frame, current_timestamp = hand_movement_queue[-1]
+    # 크기 제한(최대 20개) -> 오래된 것부터 제거하기
+    while len(hand_movement_heap) > 20:
+        heapq.heappop(hand_movement_heap)
+        
+    # 최신 순으로 2개 꺼내서 비교하기 위해 정렬
+    sorted_frames = sorted(hand_movement_heap, key=lambda x: x[0])
+    prev_timestamp, prev_frame = sorted_frames[-2]
+    current_timestamp, current_frame = sorted_frames[-1]
 
-        if current_timestamp <= prev_timestamp:
-            # 시간 순서가 이상하면 무시
-            print(f"경고: 시간 순서가 잘못되었습니다. {prev_timestamp} >= {current_timestamp}")
-            return None, None  # unpack 문제 수정 (None을 tuple 형태로 반환)
-
-        message = analyze_hand_movement(frame)
+    # 실제 손 분석하기
+    message = analyze_hand_movement(current_frame)
         # 기존 함수 호출 (실제 분석)
-        return (message, timestamp) if message else (None, None)
-
-    return None, None  # 대기 중
+    return (message, current_timestamp) if message else (None, None)
 
 
-
-
+#  몸 좌우 흔들기
 def analyze_side_movement(frame):
     global side_movement_baseline_3d, last_baseline_time
 
@@ -157,21 +156,22 @@ def analyze_side_movement(frame):
     # left_shoulder_x, right_shoulder_x = landmarks[11].x, landmarks[12].x
     # midpoint_x = (left_shoulder_x + right_shoulder_x) / 2  # 중앙 좌표 계산
 
-    # 1) baseline 없으면 세팅
+    # baseline 없으면 세팅
     if side_movement_baseline_3d is None:
         side_movement_baseline_3d = (midpoint_x, midpoint_y, midpoint_z)
         last_baseline_time = time.time() if current_time is None else current_time
         return None
     
-    # 2) 주기적으로 baseline 다시 잡기 (예: 30초마다)
+    # 주기적으로 baseline 다시 잡기 (예: 30초마다)
     if (time.time() - last_baseline_time) > rebaseline_interval:  # time.time() 직접 호출로 매번 시간 갱신함
         side_movement_baseline_3d = (midpoint_x, midpoint_y, midpoint_z)
         last_baseline_time = time.time()
         return None
     
+    # 좌우(앞뒤) 이동 거리 계산
     base_x, base_y, base_z = side_movement_baseline_3d      
 
-    # 3) x,z 좌표 차이로 "좌우 흔들림" 판단 (z좌표는 카메라에 대한 상대적인 값임)
+    # x,z 좌표 차이로 "좌우 흔들림" 판단 (z좌표는 카메라에 대한 상대적인 값임)
     # (y축은 상하이므로, 좌우 흔들림은 x+z만 고려하는 예시이다!!)
     # move_dist = np.sqrt((midpoint_x - base_x)**2 + (midpoint_z - base_z)**2)
 
@@ -189,30 +189,32 @@ def analyze_side_movement(frame):
     threshold = 0.2  # 어깨 너비 대비 20% 이상 움직임만 감지
 
     if move_dist > threshold:
-        return "[흔드는몸_CHECK] 몸을 좌우(또는 앞뒤)로 크게 움직이시네요! 편안하게 고정!!"
+        return "[흔드는몸_CHECK] 몸을 크게 흔드는 동작 감지!"
     return None
 
 
-def analyze_side_movement_with_queue(frame, timestamp):
-    # Queue를 사용하여 몸 움직임 감지
-    side_movement_queue.append((frame, timestamp))
+def analyze_side_movement_with_priority_queue(frame, timestamp):
+    # 우선순위 큐 이용
+    heapq.heappush(side_movement_heap, (timestamp, frame))
+    
+    # 크기 제한
+    while len(side_movement_heap) > 20:
+        heapq.heappop(side_movement_heap)
+    
+    # 2개 미만이면 분석 불가
+    if len(side_movement_heap) < 2:
+        return None, None
 
     # print(f"현재 양쪽으로 움직이기 측정 큐 크기: {len(side_movement_queue)}")
-    print(f"좌우 움직이기 큐 내용 (최근 5개): {[ts for _, ts in list(side_movement_queue)[-5:]]}")
+    # print(f"좌우 움직이기 큐 내용 (최근 5개): {[ts for _, ts in list(side_movement_queue)[-5:]]}")
 
-    if len(side_movement_queue) >= 2:
-        prev_frame, prev_timestamp = side_movement_queue[-2]
-        current_frame, current_timestamp = side_movement_queue[-1]
+    # 4) 정렬 후 마지막 2개
+    sorted_frames = sorted(side_movement_heap, key=lambda x: x[0])
+    prev_timestamp, prev_frame = sorted_frames[-2]
+    current_timestamp, current_frame = sorted_frames[-1]
 
-        if current_timestamp < prev_timestamp:
-            print(f"경고: 시간 순서가 잘못되었습니다. {prev_timestamp} >= {current_timestamp}")
-            return None, None
-        
-        # 실제 분석 
-        message = analyze_side_movement(frame)
-        return (message, timestamp) if message else (None, None)
-
-    return None, None
+    message = analyze_side_movement(current_frame)
+    return (message, current_timestamp) if message else (None, None)
 
 
 # 눈과 손의 거리 확인 함수
@@ -271,24 +273,21 @@ def analyze_eye_touch(frame):
     return None
 
 
-def analyze_eye_touch_with_queue(frame, timestamp):
-    # 큐에 프레임 추가
-    eye_touch_queue.append((frame, timestamp))
-    
-    # 큐 상태 출력
-    # print(f"눈 만지지 큐 내용 (최근 5개): {[ts for _, ts in list(eye_touch_queue)[-5:]]}")
-    
-    # 최소 2개의 프레임이 있어야 비교 가능
-    if len(eye_touch_queue) >= 2:
-        prev_frame, prev_timestamp = eye_touch_queue[-2]
-        current_frame, current_timestamp = eye_touch_queue[-1]
-        
-        if current_timestamp <= prev_timestamp:
-            print(f"경고: 시간 순서가 잘못되었습니다. {prev_timestamp} >= {current_timestamp}")
-            return None, None
+def analyze_eye_touch_with_priority_queue(frame, timestamp):
+    """
+    우선순위 큐로 (timestamp, frame)을 관리
+    가장 최근 2개를 분석
+    """
+    heapq.heappush(eye_touch_heap, (timestamp, frame))
+    while len(eye_touch_heap) > 20:
+        heapq.heappop(eye_touch_heap)
 
-        # 실제 행동 분석 함수 호출
-        message = analyze_eye_touch(frame)
-        return (message, timestamp) if message else (None, None)
-    
-    return None, None
+    if len(eye_touch_heap) < 2:
+        return None, None
+
+    sorted_frames = sorted(eye_touch_heap, key=lambda x: x[0])
+    prev_timestamp, prev_frame = sorted_frames[-2]
+    current_timestamp, current_frame = sorted_frames[-1]
+
+    message = analyze_eye_touch(current_frame)
+    return (message, current_timestamp) if message else (None, None)

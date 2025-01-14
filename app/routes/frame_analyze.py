@@ -1,10 +1,15 @@
 from flask import Blueprint, request, jsonify
 from app.utils.emotion_analysis import analyze_emotion
 from app.utils.frame_utils import decode_frame_func
-from app.utils.action_analysis import analyze_hand_movement_with_queue, analyze_side_movement_with_queue, analyze_eye_touch_with_queue
+from app.utils.action_analysis import (
+    analyze_hand_movement_with_priority_queue,
+    analyze_side_movement_with_priority_queue,
+    analyze_eye_touch_with_priority_queue,
+)
+
 from app.utils.json_utils import save_action_data, save_emotion_data
 from app.utils.feedback_utils import convert_to_korean
-from app.utils.action_analysis import hand_movement_queue, side_movement_queue, eye_touch_queue
+from app.utils.action_analysis import hand_movement_heap, side_movement_heap, eye_touch_heap
 import cv2
 
 
@@ -81,11 +86,6 @@ def frame_analyze():
         return jsonify({"message": "필수 데이터가 누락되었습니다."}), 400
 
     frame_counter += 1  # 프레임 카운터 증가
-    
-    # 모든 프레임마다 동작 분석 수행
-    if frame_counter % 1 != 0:
-        # print('프레임 스킵 중..') # 스킵된 프레임 로그 출력
-        return jsonify({"message": "프레임 스킵 중"}), 200
 
     # 전역 counters에 사용자 키가 없으면 초기화
     if user_id not in user_counters:
@@ -94,7 +94,7 @@ def frame_analyze():
             "hand_message_count": 0,
             "side_move_count": 0,
             "side_move_message_count": 0,
-            "eye_touch_count": 0, # 눈 만지기 행동 카운트 추가함
+            "eye_touch_count": 0,
             "eye_touch_message_count": 0,
         }
     
@@ -109,9 +109,9 @@ def frame_analyze():
         emotion_scores = emotion_result.get("emotion_scores", {})
         
         # 동작 분석 수행 (연속성 추적)
-        hand_movement_result, hand_ts = analyze_hand_movement_with_queue(decoded_frame, timestamp)
-        side_movement_result, side_ts = analyze_side_movement_with_queue(decoded_frame, timestamp)
-        eye_touch_result, eye_ts = analyze_eye_touch_with_queue(decoded_frame, timestamp)        
+        hand_movement_result, hand_ts = analyze_hand_movement_with_priority_queue(decoded_frame, timestamp)
+        side_movement_result, side_ts = analyze_side_movement_with_priority_queue(decoded_frame, timestamp)
+        eye_touch_result, eye_ts = analyze_eye_touch_with_priority_queue(decoded_frame, timestamp)        
         
         # 지금 프레임에서 임계치를 넘겼는지 (0 또는 1) 반환할 객체
         # 예) 손 3회 이상이면 1, 아니면 0 으로 Boolean 결과 응답
@@ -138,8 +138,6 @@ def frame_analyze():
                 
                 # 카운터 리셋
                 counters["hand_count"] = 0
-                # 큐 비우기 (안하면, 계속 프레임 쌓임)
-                hand_movement_queue.clear()
 
         
         # 2) 몸 좌우 흔들기
@@ -154,7 +152,7 @@ def frame_analyze():
                 is_actions["is_side"] = 1
                 
                 counters["side_move_count"] = 0
-                side_movement_queue.clear()
+        
         
         # 3) 눈 만지기
         if eye_touch_result:
@@ -167,7 +165,6 @@ def frame_analyze():
                 is_actions["is_eye"] = 1
                 
                 counters["eye_touch_count"] = 0
-                eye_touch_queue.clear()
 
                 
         # 메시지 / 카운터 저장
