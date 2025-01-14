@@ -137,7 +137,7 @@ class ActionAnalyzer:
 
     def analyze_hand_movement(self, frame_bgr):
         # 손이 중간선 위로 올라가 산만한 행동을 감지
-        pose_landmarks = self.get_pose_landmarks(frame_bgr)
+        pose_landmarks = self.get_landmarks(frame_bgr)
         if pose_landmarks is None:
             return None
 
@@ -186,7 +186,7 @@ class ActionAnalyzer:
 
     #  몸 좌우 흔들기
     def analyze_side_movement(self, frame_bgr):
-        landmarks = self.get_pose_landmarks(frame_bgr)
+        landmarks = self.get_landmarks(frame_bgr)
 
         if landmarks is None:
             return None
