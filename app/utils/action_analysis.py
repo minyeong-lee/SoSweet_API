@@ -67,7 +67,7 @@ class ActionAnalyzer:
             3) Pose 추론
             4) 리턴(landmarks or None)
         """
-        if frame_bgr is None:
+        if frame_bgr is None or not frame_bgr.any():
             return None
 
         # 리사이즈 전에 np.uint8 형으로 맞추기
@@ -92,7 +92,7 @@ class ActionAnalyzer:
         BGR 프레임 -> (640,480) 리사이즈 -> RGB
         face_mesh.process, hands.process 결과 리턴
         """
-        if frame_bgr is None:
+        if frame_bgr is None or not frame_bgr.any():
             return None, None
 
         if frame_bgr.dtype != np.uint8:
@@ -138,7 +138,7 @@ class ActionAnalyzer:
     def analyze_hand_movement(self, frame_bgr):
         # 손이 중간선 위로 올라가 산만한 행동을 감지
         pose_landmarks = self.get_landmarks(frame_bgr)
-        if pose_landmarks is None:
+        if pose_landmarks is None or len(pose_landmarks) < 17:
             return None
 
         # 입 중심과 어깨 중심의 중간값 계산
@@ -268,7 +268,7 @@ class ActionAnalyzer:
     # 눈과 손의 거리 확인 함수
     def is_hand_near_eye(self, face_landmarks, hand_landmarks):
         # Face mesh는 468개 점 (정확히는 478점일 수도 있음), 안전하게 400 이상 체크
-        if len(face_landmarks) < 400:  # 대략 468개가 풀 페이스
+        if len(face_landmarks) < 400 or len(hand_landmarks) < 17:  # 대략 468개가 풀 페이스
             return False
 
         left_eye_points = [33, 133, 159, 145]  # 왼쪽 눈 주요 랜드마크
@@ -327,7 +327,7 @@ class ActionAnalyzer:
     # 눈 만지기 행동 분석 함수
     def analyze_eye_touch(self, frame_bgr):
         # BGR -> RGB
-        if frame_bgr is None:
+        if frame_bgr is None or not frame_bgr.any():
             return None
         
         frame_bgr = np.ascontiguousarray(frame_bgr, dtype=np.uint8)

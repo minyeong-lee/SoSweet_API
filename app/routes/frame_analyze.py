@@ -44,7 +44,7 @@ def frame_analyze_ai():
     try:
         # 이미지 url 을 디코딩 (->BGR)
         decoded_frame_bgr = decode_frame_func(frame_url)
-        if decoded_frame_bgr is None:
+        if decoded_frame_bgr is None or not decoded_frame_bgr.any():
             return jsonify({"error": "디코딩 실패"}), 400
         
         # 디버깅용 이미지 저장
