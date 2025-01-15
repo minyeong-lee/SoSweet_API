@@ -49,6 +49,7 @@ class ActionAnalyzer:
 
         self.rebaseline_interval = 15  # 15초마다 baseline 갱신
         self.current_time = time.time()
+        self.frame_counter = 0  # 프레임 카운터 추가
 
     def reset_all_queues(self):
         self.hand_movement_heap.clear()
@@ -163,31 +164,44 @@ class ActionAnalyzer:
         return None
 
 
-    def analyze_hand_movement_with_priority_queue(self, frame_bgr, timestamp):
-        """
-        우선순위 큐를 사용하여 손 움직임 분석
-        """
+    def process_frame(self, frame_bgr):
+        """공통 프레임 전처리 함수"""
+        if frame_bgr is None or frame_bgr.size == 0:
+            return None
+            
         try:
-            # 입력 프레임 크기 표준화 (모든 프레임을 640x480으로)
             frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
+            if frame_bgr.dtype != np.uint8:
+                frame_bgr = frame_bgr.astype(np.uint8)
+            frame_bgr = np.ascontiguousarray(frame_bgr)
+            return frame_bgr
+        except Exception as e:
+            print(f"프레임 처리 중 오류: {str(e)}")
+            return None
+
+
+    def analyze_hand_movement_with_priority_queue(self, frame_bgr, timestamp):
+        """우선순위 큐를 사용하여 손 움직임 분석"""
+        try:
+            processed_frame = self.process_frame(frame_bgr)
+            if processed_frame is None:
+                return None, None
+                
+            # 프레임 카운터를 키로 사용
+            self.frame_counter += 1
+            heapq.heappush(self.hand_movement_heap, (self.frame_counter, processed_frame))
             
-            # 우선순위 큐에 push
-            heapq.heappush(self.hand_movement_heap, (timestamp, frame_bgr))
-            
-            # 크기 제한(최대 20개)
             while len(self.hand_movement_heap) > 20:
                 heapq.heappop(self.hand_movement_heap)
             
-            # 2개 미만이면 분석 불가
             if len(self.hand_movement_heap) < 2:
                 return None, None
-            
-            # 정렬 -> 최신 프레임
-            sorted_frames = sorted(self.hand_movement_heap, key=lambda x: x[0])
-            _, latest_frame = sorted_frames[-1]
-            
+
+            # 가장 최근 프레임 분석
+            _, latest_frame = self.hand_movement_heap[-1]
             message = self.analyze_hand_movement(latest_frame)
             return (message, timestamp) if message else (None, None)
+            
         except Exception as e:
             print(f"Hand movement 분석 중 오류: {str(e)}")
             return None, None
@@ -252,14 +266,14 @@ class ActionAnalyzer:
 
 
     def analyze_side_movement_with_priority_queue(self, frame_bgr, timestamp):
-        """
-        우선순위 큐를 사용하여 좌우 움직임 분석
-        """
+        """우선순위 큐를 사용하여 좌우 움직임 분석"""
         try:
-            # 입력 프레임 크기 표준화
-            frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-            
-            heapq.heappush(self.side_movement_heap, (timestamp, frame_bgr))
+            processed_frame = self.process_frame(frame_bgr)
+            if processed_frame is None:
+                return None, None
+                
+            self.frame_counter += 1
+            heapq.heappush(self.side_movement_heap, (self.frame_counter, processed_frame))
             
             while len(self.side_movement_heap) > 20:
                 heapq.heappop(self.side_movement_heap)
@@ -267,11 +281,10 @@ class ActionAnalyzer:
             if len(self.side_movement_heap) < 2:
                 return None, None
 
-            sorted_frames = sorted(self.side_movement_heap, key=lambda x: x[0])
-            _, latest_frame = sorted_frames[-1]
-
+            _, latest_frame = self.side_movement_heap[-1]
             message = self.analyze_side_movement(latest_frame)
             return (message, timestamp) if message else (None, None)
+            
         except Exception as e:
             print(f"Side movement 분석 중 오류: {str(e)}")
             return None, None
@@ -367,16 +380,15 @@ class ActionAnalyzer:
             return None
 
 
-
     def analyze_eye_touch_with_priority_queue(self, frame_bgr, timestamp):
-        """
-        우선순위 큐를 사용하여 눈 터치 동작 분석
-        """
+        """우선순위 큐를 사용하여 눈 터치 동작 분석"""
         try:
-            # 입력 프레임 크기 표준화
-            frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-            
-            heapq.heappush(self.eye_touch_heap, (timestamp, frame_bgr))
+            processed_frame = self.process_frame(frame_bgr)
+            if processed_frame is None:
+                return None, None
+                
+            self.frame_counter += 1
+            heapq.heappush(self.eye_touch_heap, (self.frame_counter, processed_frame))
             
             while len(self.eye_touch_heap) > 20:
                 heapq.heappop(self.eye_touch_heap)
@@ -384,11 +396,10 @@ class ActionAnalyzer:
             if len(self.eye_touch_heap) < 2:
                 return None, None
 
-            sorted_frames = sorted(self.eye_touch_heap, key=lambda x: x[0])
-            _, latest_frame = sorted_frames[-1]
-
+            _, latest_frame = self.eye_touch_heap[-1]
             message = self.analyze_eye_touch(latest_frame)
             return (message, timestamp) if message else (None, None)
+            
         except Exception as e:
             print(f"Eye touch 분석 중 오류: {str(e)}")
             return None, None
