@@ -19,7 +19,7 @@ def get_emo_feedback():
         response.headers.add("Access-Control-Allow-Origin", "*")
         response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Accept")
         response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        return response, 200  # 204 No Content로 응답 
+        return response, 204  # 204 No Content로 응답 
         
     # 요청 데이터 가져오기
     data = request.get_json()

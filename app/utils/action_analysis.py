@@ -34,7 +34,7 @@ class ActionAnalyzer:
         # MediaPipe Face Mesh 모델 초기화
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(
-            # static_image_mode=True,
+            static_image_mode=False,
             max_num_faces=1,  # 인식할 최대 얼굴 수
             min_detection_confidence=0.5
         )
@@ -42,7 +42,7 @@ class ActionAnalyzer:
         # MediaPipe Hands 모델 초기화
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
-            # static_image_mode=True,
+            static_image_mode=False,
             max_num_hands=2,  # 인식할 최대 손 개수
             min_detection_confidence=0.4
         )
@@ -81,7 +81,7 @@ class ActionAnalyzer:
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
 
         results = self.pose.process(frame_rgb) # 관절(랜드마크) 정보 얻기
-        if results.pose_landmarks:
+        if results.pose_landmarks is not None and len(results.pose_landmarks.landmark) > 0:
             return results.pose_landmarks.landmark # landmark 객체 그대로 반환
         else:
             return None
@@ -104,6 +104,11 @@ class ActionAnalyzer:
 
         face_results = self.face_mesh.process(frame_rgb)
         hand_results = self.hands.process(frame_rgb)
+        
+        if face_results.multi_face_landmarks is not None and len(face_results.multi_face_landmarks) > 0:
+            print(f"[디버그] 얼굴 랜드마크 개수: {len(face_results.multi_face_landmarks)}")
+        if hand_results.multi_hand_landmarks is not None and len(hand_results.multi_hand_landmarks) > 0:
+            print(f"[디버그] 손 랜드마크 개수: {len(hand_results.multi_hand_landmarks)}")
         return face_results, hand_results
 
 
@@ -345,10 +350,10 @@ class ActionAnalyzer:
         
         # 얼굴과 손을 모두 인식한 경우만 분석
         if (
-            face_results.multi_face_landmarks is None 
-            or len(face_results.multi_face_landmarks) == 0
-            or hand_results.multi_hand_landmarks is None
-            or len(hand_results.multi_hand_landmarks) == 0
+            face_results.multi_face_landmarks is not None
+            and len(face_results.multi_face_landmarks) > 0
+            and hand_results.multi_hand_landmarks is not None
+            and len(hand_results.multi_hand_landmarks) > 0
         ):
             return None
 
