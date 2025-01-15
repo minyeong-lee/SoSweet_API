@@ -349,12 +349,7 @@ class ActionAnalyzer:
         #     print("[디버그] 손이 감지되지 않았습니다.")
         
         # 얼굴과 손을 모두 인식한 경우만 분석
-        if (
-            face_results.multi_face_landmarks is not None
-            and len(face_results.multi_face_landmarks) > 0
-            and hand_results.multi_hand_landmarks is not None
-            and len(hand_results.multi_hand_landmarks) > 0
-        ):
+        if not face_results.multi_face_landmarks or not hand_results.multi_hand_landmarks:
             return None
 
 
