@@ -61,30 +61,24 @@ class ActionAnalyzer:
     # 공통 유틸
     def get_landmarks(self, frame_bgr):
         """
-            BGR 프레임을 입력으로 받아,
-            1) (640,480) 리사이즈
-            2) BGR->RGB
-            3) Pose 추론
-            4) 리턴(landmarks or None)
+        BGR 프레임을 입력으로 받아 처리
         """
-        if frame_bgr is None or not frame_bgr.any():
+        if frame_bgr is None or frame_bgr.size == 0:  # 수정된 부분
             return None
 
         # 리사이즈 전에 np.uint8 형으로 맞추기
         if frame_bgr.dtype != np.uint8:
             frame_bgr = frame_bgr.astype(np.uint8)
 
-        frame_bgr = np.ascontiguousarray(frame_bgr) # 메모리 연속성 보장
-        frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR) # 리사이즈 (원본의 160,120에서 640,480으로)
+        frame_bgr = np.ascontiguousarray(frame_bgr)
+        frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
 
-        # BGR -> RGB
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-
-        results = self.pose.process(frame_rgb) # 관절(랜드마크) 정보 얻기
+        results = self.pose.process(frame_rgb)
+        
         if results.pose_landmarks is not None and len(results.pose_landmarks.landmark) > 0:
-            return results.pose_landmarks.landmark # landmark 객체 그대로 반환
-        else:
-            return None
+            return results.pose_landmarks.landmark
+        return None
 
 
     def get_hand_and_face_results(self, frame_bgr):
@@ -92,7 +86,7 @@ class ActionAnalyzer:
         BGR 프레임 -> (640,480) 리사이즈 -> RGB
         face_mesh.process, hands.process 결과 리턴
         """
-        if frame_bgr is None or not frame_bgr.any():
+        if frame_bgr is None or frame_bgr.size == 0:  # 수정된 부분
             return None, None
 
         if frame_bgr.dtype != np.uint8:
@@ -105,10 +99,6 @@ class ActionAnalyzer:
         face_results = self.face_mesh.process(frame_rgb)
         hand_results = self.hands.process(frame_rgb)
         
-        if face_results.multi_face_landmarks is not None and len(face_results.multi_face_landmarks) > 0:
-            print(f"[디버그] 얼굴 랜드마크 개수: {len(face_results.multi_face_landmarks)}")
-        if hand_results.multi_hand_landmarks is not None and len(hand_results.multi_hand_landmarks) > 0:
-            print(f"[디버그] 손 랜드마크 개수: {len(hand_results.multi_hand_landmarks)}")
         return face_results, hand_results
 
 
@@ -331,8 +321,7 @@ class ActionAnalyzer:
 
     # 눈 만지기 행동 분석 함수
     def analyze_eye_touch(self, frame_bgr):
-        # BGR -> RGB
-        if frame_bgr is None or not frame_bgr.any():
+        if frame_bgr is None or frame_bgr.size == 0:  # 수정된 부분
             return None
         
         frame_bgr = np.ascontiguousarray(frame_bgr, dtype=np.uint8)

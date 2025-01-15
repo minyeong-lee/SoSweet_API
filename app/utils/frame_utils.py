@@ -13,15 +13,17 @@ def decode_frame_func(frame):
         # Base64 디코딩하여 numpy array로 변환
         img_data = base64.b64decode(base64_data)
         np_img = np.frombuffer(img_data, dtype=np.uint8)
-        decoded_frame = cv2.imdecode(np_img, cv2.IMREAD_COLOR) # BGR (OpenCV의 표준)
+        decoded_frame = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
         
         if decoded_frame is None:
             raise ValueError("이미지 디코딩 실패")
+            
+        if decoded_frame.size == 0:  # 빈 배열 체크
+            raise ValueError("빈 이미지 데이터")
         
-        # 여기서 decoded_frame은 BGR 형식
         print(f"[디버그] 디코딩된 이미지 해상도: {decoded_frame.shape}")
-        
         return decoded_frame
+        
     except Exception as e:
         raise ValueError(f"Frame decoding 실패: {str(e)}")
     
