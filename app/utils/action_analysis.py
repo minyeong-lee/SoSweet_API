@@ -63,43 +63,52 @@ class ActionAnalyzer:
         """
         BGR 프레임을 입력으로 받아 처리
         """
-        if frame_bgr is None or frame_bgr.size == 0:  # 수정된 부분
+        if frame_bgr is None or frame_bgr.size == 0:
             return None
 
-        # 리사이즈 전에 np.uint8 형으로 맞추기
-        if frame_bgr.dtype != np.uint8:
-            frame_bgr = frame_bgr.astype(np.uint8)
+        try:
+            # 입력 이미지 크기 표준화 (160x120 -> 320x180)
+            frame_bgr = cv2.resize(frame_bgr, (320, 180), interpolation=cv2.INTER_LINEAR)
+            
+            if frame_bgr.dtype != np.uint8:
+                frame_bgr = frame_bgr.astype(np.uint8)
 
-        frame_bgr = np.ascontiguousarray(frame_bgr)
-        frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-
-        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(frame_rgb)
-        
-        if results.pose_landmarks is not None and len(results.pose_landmarks.landmark) > 0:
-            return results.pose_landmarks.landmark
-        return None
+            frame_bgr = np.ascontiguousarray(frame_bgr)
+            frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+            
+            results = self.pose.process(frame_rgb)
+            if results.pose_landmarks is not None and len(results.pose_landmarks.landmark) > 0:
+                return results.pose_landmarks.landmark
+            return None
+        except Exception as e:
+            print(f"Landmark 처리 중 오류: {str(e)}")
+            return None
 
 
     def get_hand_and_face_results(self, frame_bgr):
         """
-        BGR 프레임 -> (640,480) 리사이즈 -> RGB
-        face_mesh.process, hands.process 결과 리턴
+        BGR 프레임을 처리하여 face_mesh와 hands 결과를 반환
         """
-        if frame_bgr is None or frame_bgr.size == 0:  # 수정된 부분
+        if frame_bgr is None or frame_bgr.size == 0:
             return None, None
 
-        if frame_bgr.dtype != np.uint8:
-            frame_bgr = frame_bgr.astype(np.uint8)
+        try:
+            # 입력 이미지 크기 표준화 (160x120 -> 320x180)
+            frame_bgr = cv2.resize(frame_bgr, (320, 180), interpolation=cv2.INTER_LINEAR)
+            
+            if frame_bgr.dtype != np.uint8:
+                frame_bgr = frame_bgr.astype(np.uint8)
 
-        frame_bgr = np.ascontiguousarray(frame_bgr)
-        frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+            frame_bgr = np.ascontiguousarray(frame_bgr)
+            frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
 
-        face_results = self.face_mesh.process(frame_rgb)
-        hand_results = self.hands.process(frame_rgb)
-        
-        return face_results, hand_results
+            face_results = self.face_mesh.process(frame_rgb)
+            hand_results = self.hands.process(frame_rgb)
+            
+            return face_results, hand_results
+        except Exception as e:
+            print(f"Hand/Face 처리 중 오류: {str(e)}")
+            return None, None
 
 
     @staticmethod
@@ -321,32 +330,33 @@ class ActionAnalyzer:
 
     # 눈 만지기 행동 분석 함수
     def analyze_eye_touch(self, frame_bgr):
-        if frame_bgr is None or frame_bgr.size == 0:  # 수정된 부분
+        if frame_bgr is None or frame_bgr.size == 0:
             return None
         
-        frame_bgr = np.ascontiguousarray(frame_bgr, dtype=np.uint8)
-        frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        try:
+            # 입력 이미지 크기 표준화 (160x120 -> 320x180)
+            frame_bgr = cv2.resize(frame_bgr, (320, 180), interpolation=cv2.INTER_LINEAR)
             
-        face_results = self.face_mesh.process(frame_rgb)
-        hand_results = self.hands.process(frame_rgb)                           
-        
-        # 디버깅으로 추가함
-        # if not face_results.multi_face_landmarks:
-        #     print("[디버그] 얼굴이 감지되지 않았습니다.")
-        # if not hand_results.multi_hand_landmarks:
-        #     print("[디버그] 손이 감지되지 않았습니다.")
-        
-        # 얼굴과 손을 모두 인식한 경우만 분석
-        if not face_results.multi_face_landmarks or not hand_results.multi_hand_landmarks:
+            if frame_bgr.dtype != np.uint8:
+                frame_bgr = frame_bgr.astype(np.uint8)
+            
+            frame_bgr = np.ascontiguousarray(frame_bgr)
+            frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+            
+            face_results = self.face_mesh.process(frame_rgb)
+            hand_results = self.hands.process(frame_rgb)                           
+            
+            if not face_results.multi_face_landmarks or not hand_results.multi_hand_landmarks:
+                return None
+
+            for face_lms in face_results.multi_face_landmarks:
+                for hand_lms in hand_results.multi_hand_landmarks:
+                    if self.is_hand_near_eye(face_lms.landmark, hand_lms.landmark):
+                        return "[눈_CHECK] 눈을 만지고 있습니다!!!!!"
             return None
-
-
-        for face_lms in face_results.multi_face_landmarks:
-            for hand_lms in hand_results.multi_hand_landmarks:
-                if self.is_hand_near_eye(face_lms.landmark, hand_lms.landmark):
-                    return "[눈_CHECK] 눈을 만지고 있습니다!!!!!"
-        return None
+        except Exception as e:
+            print(f"Eye touch 분석 중 오류: {str(e)}")
+            return None
 
 
 
