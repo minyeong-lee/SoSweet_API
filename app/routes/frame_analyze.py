@@ -170,7 +170,7 @@ def frame_analyze():
             print("[몸흔들었음_CHECK] 몸 좌우로 흔들기 1회 감지")
 
             # 조건 설정
-            if counters["side_move_count"] >= 2:
+            if counters["side_move_count"] >= 3:
                 counters["side_move_message_count"] += 1
                 is_actions["is_side"] = 1
                 counters["side_move_count"] = 0

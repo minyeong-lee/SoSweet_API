@@ -249,7 +249,7 @@ class ActionAnalyzer:
         # move_dist = np.sqrt((midpoint_x - base_x)**2 + (midpoint_z - base_z)**2)
 
         # x축 움직임에 더 큰 가중치를 부여했음!!! 개선사항
-        x_weight = 1.2
+        x_weight = 1.5
         z_weight = 0.3
         move_dist = np.sqrt(
             x_weight * (midpoint_x - base_x)**2 + 

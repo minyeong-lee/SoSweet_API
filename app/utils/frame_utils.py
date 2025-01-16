@@ -21,7 +21,7 @@ def decode_frame_func(frame):
         if decoded_frame.size == 0:  # 빈 배열 체크
             raise ValueError("빈 이미지 데이터")
         
-        print(f"[디버그] 디코딩된 이미지 해상도: {decoded_frame.shape}")
+        # print(f"[디버그] 디코딩된 이미지 해상도: {decoded_frame.shape}")
         return decoded_frame
         
     except Exception as e:
