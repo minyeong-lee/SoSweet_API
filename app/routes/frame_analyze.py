@@ -170,7 +170,7 @@ def frame_analyze():
             print("[몸흔들었음_CHECK] 몸 좌우로 흔들기 1회 감지")
 
             # 조건 설정
-            if counters["side_move_count"] >= 3:
+            if counters["side_move_count"] >= 5:
                 counters["side_move_message_count"] += 1
                 is_actions["is_side"] = 1
                 counters["side_move_count"] = 0
@@ -181,7 +181,7 @@ def frame_analyze():
             counters["eye_touch_count"] += 1
             print("[눈 만졌음_CHECK] 눈 손으로 만지기 1회 감지")
 
-            if counters["eye_touch_count"] >= 2:
+            if counters["eye_touch_count"] >= 4:
                 counters["eye_touch_message_count"] += 1
                 is_actions["is_eye"] = 1
                 counters["eye_touch_count"] = 0

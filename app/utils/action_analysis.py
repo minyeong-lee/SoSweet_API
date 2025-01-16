@@ -171,10 +171,7 @@ class ActionAnalyzer:
             
         try:
             frame_bgr = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_LINEAR)
-            if frame_bgr.dtype != np.uint8:
-                frame_bgr = frame_bgr.astype(np.uint8)
-            frame_bgr = np.ascontiguousarray(frame_bgr)
-            return frame_bgr
+            return np.ascontiguousarray(frame_bgr)
         except Exception as e:
             print(f"프레임 처리 중 오류: {str(e)}")
             return None
@@ -293,7 +290,7 @@ class ActionAnalyzer:
     # 눈과 손의 거리 확인 함수
     def is_hand_near_eye(self, face_landmarks, hand_landmarks):
         # Face mesh는 468개 점 (정확히는 478점일 수도 있음), 안전하게 400 이상 체크
-        if len(face_landmarks) < 400 or len(hand_landmarks) < 17:  # 대략 468개가 풀 페이스
+        if len(face_landmarks) < 468 or len(hand_landmarks) < 21:  # 대략 468개가 풀 페이스
             return False
 
         left_eye_points = [33, 133, 159, 145]  # 왼쪽 눈 주요 랜드마크
