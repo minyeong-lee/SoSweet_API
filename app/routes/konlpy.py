@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from kiwipiepy import Kiwi
+from kiwipiepy.utils import Stopwords
 
 nlp_bp = Blueprint('nlp', __name__)
 kiwi = Kiwi(model_type='sbg')
@@ -15,21 +16,31 @@ def nlp():
     #발화에 대한 키워드 dict
     keyword_dict = dict()
     
+    #불용어 관리
+    stopwords = Stopwords()
+    
+    stopwords.add(('최근', 'NNG'))
+    stopwords.add(('요즘', 'NNG'))
+    stopwords.add(('다음', 'NNG'))
+    stopwords.add(('장르', 'NNG'))
+    stopwords.add(('가이드', 'NNG'))
+    stopwords.add(('메세지', 'NNG'))
+    
     response = ''
     data = request.json
     script = data.get('script', '')
     filler_count = 0
     noword_count = 0
     
-    noword_flag = False;
-    filler_flag = False;
-    noend_flag = False;
-    nopolite_flag = False;
+    noword_flag = False
+    filler_flag = False
+    noend_flag = False
+    nopolite_flag = False
     
     if not script:
         return jsonify({"error": "스크립트가 넘어오지 않음"}), 400
     
-    Tokens = kiwi.tokenize(script)
+    Tokens = kiwi.tokenize(script, stopwords = stopwords)
     
     for temp in Tokens :
         if temp.form in ['음', '어'] and temp.tag == 'IC': #말을 더듬는 경우
