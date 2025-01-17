@@ -25,6 +25,7 @@ def nlp():
     stopwords.add(('장르', 'NNG'))
     stopwords.add(('가이드', 'NNG'))
     stopwords.add(('메세지', 'NNG'))
+    stopwords.add(('안녕', 'NNG'))
     
     response = ''
     data = request.json
