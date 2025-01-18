@@ -27,17 +27,8 @@ def nlp():
     stopwords.add(('메세지', 'NNG'))
     stopwords.add(('안녕', 'NNG'))
     stopwords.add(('준비', 'NNG'))
-    stopwords.add(('질문', 'NNG'))
-    stopwords.add(('지원', 'NNG'))
-    stopwords.add(('기', 'NNG'))
-    stopwords.add(('취미', 'NNG'))
-    stopwords.add(('연습', 'NNG'))
-    stopwords.add(('실전', 'NNG'))
-    stopwords.add(('감독', 'NNG'))
     stopwords.add(('감명', 'NNG'))
-    stopwords.add(('여행', "NNG"))
     stopwords.add(('추천', 'NNG'))
-    stopwords.add(('표정', 'NNG'))
     stopwords.add(('실시간', 'NNG'))
     
     response = ''
