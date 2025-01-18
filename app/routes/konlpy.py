@@ -35,6 +35,10 @@ def nlp():
     stopwords.add(('실전', 'NNG'))
     stopwords.add(('감독', 'NNG'))
     stopwords.add(('감명', 'NNG'))
+    stopwords.add(('여행', "NNG"))
+    stopwords.add(('추천', 'NNG'))
+    stopwords.add(('표정', 'NNG'))
+    stopwords.add(('실시간', 'NNG'))
     
     response = ''
     data = request.json
